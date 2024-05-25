@@ -4,16 +4,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "PlayerBaseCharacter.generated.h"
+#include "KoalaBaseCharacter.generated.h"
+
+struct FInputActionValue;
+class UInputMappingContext;
+class UInputAction;
 
 UCLASS()
-class GAMEJAM24PROJECT_API APlayerBaseCharacter : public ACharacter
+class GAMEJAM24PROJECT_API AKoalaBaseCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this character's properties
-	APlayerBaseCharacter();
+	AKoalaBaseCharacter();
 
 protected:
 	// Called when the game starts or when spawned
@@ -26,4 +30,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+private:
+	void Move(const FInputActionValue& value);
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputMappingContext* InputMapping;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* MoveAction;
+
 };
+
+
