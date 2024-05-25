@@ -31,7 +31,8 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 private:
-	void Move(const FInputActionValue& value);
+	void Move(const FInputActionValue& Value);
+	void Look(const FInputActionValue& Value);
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputMappingContext* InputMapping;
@@ -39,6 +40,13 @@ private:
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MoveAction;
 
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* JumpAction;
+
 };
+
 
 

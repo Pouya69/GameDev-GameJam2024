@@ -50,6 +50,8 @@ void AKoalaBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	if (UEnhancedInputComponent* EnhancedPlayerInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		EnhancedPlayerInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AKoalaBaseCharacter::Move);
+		EnhancedPlayerInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKoalaBaseCharacter::Look);
+		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 	}
 
 }
@@ -77,4 +79,11 @@ void AKoalaBaseCharacter::Move(const FInputActionValue& Value)
 
 	}
 	
+}
+
+void AKoalaBaseCharacter::Look(const FInputActionValue &Value)
+{
+	const FVector2D Input = Value.Get<FVector2D>();
+	AddControllerYawInput(Input.X);
+	AddControllerPitchInput(Input.Y);
 }
