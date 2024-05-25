@@ -5,6 +5,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "BaseInteractableObject.h"
 
 
 
@@ -52,6 +53,8 @@ void AKoalaBaseCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInput
 		EnhancedPlayerInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AKoalaBaseCharacter::Move);
 		EnhancedPlayerInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKoalaBaseCharacter::Look);
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this,  &AKoalaBaseCharacter::Interact);
+
 	}
 
 }
@@ -86,4 +89,25 @@ void AKoalaBaseCharacter::Look(const FInputActionValue &Value)
 	const FVector2D Input = Value.Get<FVector2D>();
 	AddControllerYawInput(Input.X);
 	AddControllerPitchInput(Input.Y);
+}
+
+void AKoalaBaseCharacter::Interact(const FInputActionValue &Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Koala interacts..."));
+	// Check if overlaps with something
+	TSet<AActor*> OverlappingActors{};
+	// TODO for now filtered by ABaseInteractableObject, next will remove this filter and instead check if interface is implemented.
+	GetOverlappingActors(OverlappingActors, ABaseInteractableObject::StaticClass());
+	if (!OverlappingActors.IsEmpty())
+	{
+		for(auto OverlappingActor : OverlappingActors)
+		{
+			ABaseInteractableObject* Actor = Cast<ABaseInteractableObject>(OverlappingActor);
+			Actor->Interact();
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Not Overlap"));
+	}
 }

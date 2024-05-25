@@ -33,6 +33,7 @@ public:
 private:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void Interact(const FInputActionValue& Value);
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputMappingContext* InputMapping;
@@ -45,6 +46,9 @@ private:
 
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
+
+	UPROPERTY(EditAnywhere, Category="Input")
+	UInputAction* InteractAction;
 
 };
 
