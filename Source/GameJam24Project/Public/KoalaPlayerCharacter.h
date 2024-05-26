@@ -44,13 +44,20 @@ public:
 
 public:
 	// Interactions
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactions | Player")
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		float InteractionRange = 100.f;
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
+		float TreeAttachmentRadius = 20.f;  // Distance between player and tree when player is climbing the tree. For the initial teleportation
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactions | Player")
 		bool bIsOnTree;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interactions | Player")
 		AActor* ItemCarriedOnBack;  // For carrying koalas on the back or items etc. Should be AActor because Koala is Character and ABaseInteractableObject is another class itself
 	bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
+
+public:
+	// Locomotion
+	UPROPERTY(EditAnywhere, Category = "Locomotion")
+		float TreeClimbingSpeed = 20.f;
 
 private:
 	void Move(const FInputActionValue& Value);

@@ -10,6 +10,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "BaseTree.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -63,12 +64,23 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 
 	if (Input.X != 0.0f)
 	{
+		if (bIsOnTree) {
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
+			// TODO: Player will rotate around the tree
+			// AddMovementInput(MovementDirection, Input.X);
+			return;
+		}
 		const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
 		AddMovementInput(MovementDirection, Input.X);
 	}
 
 	if (Input.Y != 0.0f)
 	{
+		if (bIsOnTree) {
+			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
+			AddMovementInput(MovementDirection, Input.Y*TreeClimbingSpeed);
+			return;
+		}
 		const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
 		AddMovementInput(MovementDirection, Input.Y);
 	}
@@ -78,6 +90,7 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
 {
+	if (bIsOnTree) return;  // Player will not rotate if on tree. This is for now. We will change it
 	const FVector2D Input = Value.Get<FVector2D>();
 	AddControllerYawInput(Input.X);
 	AddControllerPitchInput(Input.Y);
@@ -122,15 +135,25 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	// TODO: We should also check if the player is already on tree
 	if (bIsOnTree) {
 		// TODO: Detach from tree
-		Super::Jump();
 		bIsOnTree = false;
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
+		Super::Jump();
 		return;
 	}
 	FHitResult HitResult;
 	if (AreThereAnyTreesAround(HitResult)) {
-		// TODO: Attach from tree
+		// TODO: Attach to tree
+		// We first teleport the player to the tree
 		ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor());
-		UE_LOG(LogTemp, Warning, TEXT("Tree detected on Jump"));
+		FVector CurrentTreeLocation = TreeObject->GetActorLocation();
+		CurrentTreeLocation.Z = GetActorLocation().Z;
+		FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, GetActorLocation());
+		FVector TargetLocation = CurrentTreeLocation + (Direction *TreeAttachmentRadius);
+		// Player will face the tree
+		GetCharacterMovement()->StopMovementImmediately();
+		SetActorLocation(TargetLocation);
+		PlayerController->SetControlRotation((-1 * Direction).Rotation());
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);  // To allow the character to go up and down freely
 		bIsOnTree = true;
 		return;
 	}
