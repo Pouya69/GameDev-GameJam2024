@@ -6,10 +6,6 @@
 #include "GameFramework/Character.h"
 #include "KoalaBaseCharacter.generated.h"
 
-struct FInputActionValue;
-class UInputMappingContext;
-class UInputAction;
-
 UCLASS()
 class GAMEJAM24PROJECT_API AKoalaBaseCharacter : public ACharacter
 {
@@ -28,9 +24,14 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UCapsuleComponent* CapsuleComp;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")
+		float TreeDistanceCheck = 100;
+	bool AreThereAnyTreesAround(FHitResult& OutHitResult) const;
+	bool GetObjectsAround(FHitResult& OutHitResult, float RangeCheck) const;
+
 
 private:
-
+	
 
 };
 

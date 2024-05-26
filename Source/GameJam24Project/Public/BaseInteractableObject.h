@@ -24,6 +24,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// It is better to not have the interact function here. Because it is done by player or AI not by itself
+	// Unless we are doing timing and delays
 	virtual void Interact() override;
 
 };

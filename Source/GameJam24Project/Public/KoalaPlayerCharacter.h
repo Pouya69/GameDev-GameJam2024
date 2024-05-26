@@ -9,6 +9,10 @@
 /**
  * 
  */
+struct FInputActionValue;
+class UInputMappingContext;
+class UInputAction;
+
 UCLASS()
 class GAMEJAM24PROJECT_API AKoalaPlayerCharacter : public AKoalaBaseCharacter
 {
@@ -30,6 +34,7 @@ public:
 
 	APlayerController* PlayerController;
 
+
 public:
 	// Components
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
@@ -37,6 +42,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		class USpringArmComponent* SpringArmComp;
 
+public:
+	// Interactions
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactions | Player")
+		float InteractionRange = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Interactions | Player")
+		bool bIsOnTree;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interactions | Player")
+		AActor* ItemCarriedOnBack;  // For carrying koalas on the back or items etc. Should be AActor because Koala is Character and ABaseInteractableObject is another class itself
+	bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
 
 private:
 	void Move(const FInputActionValue& Value);

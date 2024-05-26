@@ -8,10 +8,11 @@
 #include "BaseInteractableObject.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "BaseTree.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
-	Super::AKoalaBaseCharacter();
 	PrimaryActorTick.bCanEverTick = true;
 
 	SpringArmComp = CreateDefaultSubobject<USpringArmComponent>(FName("Spring Arm Comp"));
@@ -46,7 +47,7 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	{
 		EnhancedPlayerInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Move);
 		EnhancedPlayerInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Look);
-		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 
 	}
@@ -85,7 +86,17 @@ void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
 void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 {
 	// This Interact function is for picking things up, interacting with objects using the USE KEY
+	// This is more optimized I think.
+	FHitResult HitResult;
+	if (!GetObjectsAround(HitResult, InteractionRange)) return;
 
+
+	if (ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor())) {
+		// NOTE: This is just an example. The tree attachment is on PlayerJump already
+		UE_LOG(LogTemp, Warning, TEXT("Tree Interacted"));
+	}
+
+	/*
 	// Check if overlaps with something
 	TArray<AActor*> OverlappingActors;
 	// TODO for now filtered by ABaseInteractableObject, next will remove this filter and instead check if interface is implemented.
@@ -102,12 +113,28 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Not Overlap"));
 	}
+	*/
 }
 
 void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 {
 	// This PlayerJump function is for jumping AND interacting with trees as a result of player pressing JUMP KEY
-	// TODO: Should check if there are any trees around
+	// TODO: We should also check if the player is already on tree
+	if (bIsOnTree) {
+		// TODO: Detach from tree
+		Super::Jump();
+		bIsOnTree = false;
+		return;
+	}
+	FHitResult HitResult;
+	if (AreThereAnyTreesAround(HitResult)) {
+		// TODO: Attach from tree
+		ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor());
+		UE_LOG(LogTemp, Warning, TEXT("Tree detected on Jump"));
+		bIsOnTree = true;
+		return;
+	}
+	
 	
 
 	Super::Jump();

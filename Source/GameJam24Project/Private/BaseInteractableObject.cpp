@@ -27,7 +27,9 @@ void ABaseInteractableObject::Tick(float DeltaTime)
 
 }
 
-void ABaseInteractableObject::Interact() 
+
+// See the header file
+void ABaseInteractableObject::Interact()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Interacting..."));
 }
