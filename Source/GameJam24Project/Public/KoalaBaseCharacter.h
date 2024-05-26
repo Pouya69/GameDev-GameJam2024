@@ -27,28 +27,10 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	UCapsuleComponent* CapsuleComp;
 
 private:
-	void Move(const FInputActionValue& Value);
-	void Look(const FInputActionValue& Value);
-	void Interact(const FInputActionValue& Value);
 
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputMappingContext* InputMapping;
-
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* MoveAction;
-
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* LookAction;
-
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* JumpAction;
-
-	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* InteractAction;
 
 };
 
