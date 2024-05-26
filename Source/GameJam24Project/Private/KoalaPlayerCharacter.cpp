@@ -65,8 +65,17 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 	if (Input.X != 0.0f)
 	{
 		if (bIsOnTree) {
+			if (CurrentClimbingTree == nullptr) return;
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
-			// TODO: Player will rotate around the tree
+			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
+			CurrentTreeLocation.Z = GetActorLocation().Z;
+			FVector ActorRightTargetLocation = GetActorLocation() + (Input.X * (TreeClimbingSpeed*3) * MovementDirection);
+			FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, ActorRightTargetLocation);
+			FVector TargetLocation = CurrentTreeLocation + (Direction * TreeAttachmentRadius);
+			SetActorLocation(TargetLocation, true);
+			FRotator FinalRotation = (-1 * Direction).Rotation();
+			FinalRotation.Pitch = GetControlRotation().Pitch;
+			PlayerController->SetControlRotation(FinalRotation);
 			// AddMovementInput(MovementDirection, Input.X);
 			return;
 		}
@@ -90,10 +99,22 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
 {
-	if (bIsOnTree) return;  // Player will not rotate if on tree. This is for now. We will change it
 	const FVector2D Input = Value.Get<FVector2D>();
-	AddControllerYawInput(Input.X);
+	if (!bIsOnTree) {
+		// Player will free look up and down
+		AddControllerYawInput(Input.X);
+	}
+	
 	AddControllerPitchInput(Input.Y);
+}
+
+void AKoalaPlayerCharacter::DetachFromCurrentTree() {
+	if (!bIsOnTree || CurrentClimbingTree == nullptr) return;
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
+	// Super::Jump();
+	bIsOnTree = false;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+	CurrentClimbingTree = nullptr;
 }
 
 void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
@@ -134,18 +155,15 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	// This PlayerJump function is for jumping AND interacting with trees as a result of player pressing JUMP KEY
 	// TODO: We should also check if the player is already on tree
 	if (bIsOnTree) {
-		// TODO: Detach from tree
-		bIsOnTree = false;
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
-		Super::Jump();
+		DetachFromCurrentTree();
 		return;
 	}
 	FHitResult HitResult;
 	if (AreThereAnyTreesAround(HitResult)) {
 		// TODO: Attach to tree
 		// We first teleport the player to the tree
-		ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor());
-		FVector CurrentTreeLocation = TreeObject->GetActorLocation();
+		CurrentClimbingTree = Cast<ABaseTree>(HitResult.GetActor());
+		FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
 		CurrentTreeLocation.Z = GetActorLocation().Z;
 		FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, GetActorLocation());
 		FVector TargetLocation = CurrentTreeLocation + (Direction *TreeAttachmentRadius);
@@ -155,6 +173,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		PlayerController->SetControlRotation((-1 * Direction).Rotation());
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);  // To allow the character to go up and down freely
 		bIsOnTree = true;
+		GetCharacterMovement()->bOrientRotationToMovement = false;
 		return;
 	}
 	
