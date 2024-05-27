@@ -14,6 +14,8 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	// PrimaryActorTick.bCanEverTick = true;
 	CapsuleComp = Cast<UCapsuleComponent>(GetRootComponent());
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -29,14 +31,12 @@ void AKoalaBaseCharacter::BeginPlay()
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bIsBeingCarried) return;  // Stamina will not reduce if it is being carried
 	if (Stamina <= 0) {
 		Sleep();
 		return;
 	}
 	float StaminaFinalDeducationAmount = IsCharacterMoving() ? (StaminaDeductionRate * StaminaDeductionMultiplierMoving) : StaminaDeductionRate;
-	if (GetController()->IsPlayerController()) {
-		StaminaFinalDeducationAmount *= 0.5;  // Player will sleep at slower rate than babies
-	}
 	Stamina -= StaminaFinalDeducationAmount;
 	// UE_LOG(LogTemp, Warning, TEXT("Stamina: %f"), GetStamina());
 
@@ -125,12 +125,12 @@ void AKoalaBaseCharacter::Sleep()
 		}
 		bIsSleeping = false;
 		Stamina = StaminaAfterSleep;
-		UE_LOG(LogTemp, Warning, TEXT("Awake..."));
+		UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 	});
 	if (GetController()->IsPlayerController()) {
 		DisableInput(Cast<APlayerController>(GetController()));
 	}
 	bIsSleeping = true;
-	UE_LOG(LogTemp, Warning, TEXT("Sleeping..."));
+	UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
 }
