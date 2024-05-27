@@ -27,5 +27,9 @@ public:
 	// It is better to not have the interact function here. Because it is done by player or AI not by itself
 	// Unless we are doing timing and delays
 	virtual void Interact() override;
+	UFUNCTION(BlueprintCallable)
+		bool IsConsumable() const;
+	UPROPERTY(EditAnywhere)
+		UStaticMeshComponent* BaseMeshComp;  // This is the base mesh for the object
 
 };
