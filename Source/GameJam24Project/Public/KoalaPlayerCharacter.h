@@ -45,13 +45,17 @@ public:
 public:
 	// Interactions
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
+		FName ItemCarryBoneNameOnMesh;
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		float InteractionRange = 100.f;
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
+		float ItemLaunchForceAmount = 100.f;  // For launching the object IF we are doing it
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interactions | Player")
 		AActor* ItemCarriedOnBack;  // For carrying koalas on the back or items etc. Should be AActor because Koala is Character and ABaseInteractableObject is another class itself
 	bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
-
-public:
-	// Camera
+	void CarryItemOnBack(AActor* ItemToCarry);
+	void DropCurrentCarriedItem();
+	
 
 public:
 	// Climbing
@@ -68,22 +72,22 @@ private:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
+	void PickupAndCarryItem(const FInputActionValue& Value);
 	void PlayerJump(const FInputActionValue& Value);
 
 private:
 	// Actions
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputMappingContext* InputMapping;
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* MoveAction;
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* LookAction;
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* JumpAction;
-
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* InteractAction;
+	UPROPERTY(EditAnywhere, Category = "Input")
+		UInputAction* CarryItemAction;
+
 };

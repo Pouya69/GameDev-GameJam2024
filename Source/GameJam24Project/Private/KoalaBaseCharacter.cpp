@@ -4,6 +4,9 @@
 #include "KoalaBaseCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "BaseTree.h"
+#include "Engine/DamageEvents.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "Consumable.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -17,6 +20,7 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 void AKoalaBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
 	
 	
 }
@@ -25,12 +29,22 @@ void AKoalaBaseCharacter::BeginPlay()
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (Stamina <= 0) {
+		Sleep();
+		return;
+	}
+	float StaminaFinalDeducationAmount = IsCharacterMoving() ? (StaminaDeductionRate * StaminaDeductionMultiplierMoving) : StaminaDeductionRate;
+	if (GetController()->IsPlayerController()) {
+		StaminaFinalDeducationAmount *= 0.5;  // Player will sleep at slower rate than babies
+	}
+	Stamina -= StaminaFinalDeducationAmount;
+	// UE_LOG(LogTemp, Warning, TEXT("Stamina: %f"), GetStamina());
 
 }
 
 bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult) const
 {
-	bool bResult = GetObjectsAround(OutHitResult, TreeDistanceCheck);
+	bool bResult = GetObjectAround(OutHitResult, TreeDistanceCheck);
 	if (bResult) {
 		// To check if the hit actor was a tree specifically
 		bResult = OutHitResult.GetActor()->IsA(ABaseTree::StaticClass());
@@ -38,7 +52,7 @@ bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult) const
 	return bResult;
 }
 
-bool AKoalaBaseCharacter::GetObjectsAround(FHitResult& OutHitResult, float RangeCheck) const
+bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeCheck) const
 {
 	FVector Start = GetActorLocation();
 	FVector End = Start + (RangeCheck * GetActorForwardVector());
@@ -51,4 +65,72 @@ bool AKoalaBaseCharacter::GetObjectsAround(FHitResult& OutHitResult, float Range
 	}
 
 	return bResult;
+}
+
+bool AKoalaBaseCharacter::IsCharacterMoving() const
+{
+	FVector Velocity = GetVelocity();
+	if (GetCharacterMovement()->IsFalling()) {
+		// If character is in air we are not checking the Z velocity. We will only check Z velocity when going up trees and etc.
+		Velocity.Z = 0;
+	}
+	return Velocity.Length() >= MovementCheckSpeed;
+}
+
+void AKoalaBaseCharacter::DamageTakenHandle(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+{
+	// We need to do ApplyDamage in Fire class or whatever
+	FDamageEvent DamageEvent = FDamageEvent(UDamageType::StaticClass());
+	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
+	Health -= ActualDamage;
+	if (Health <= 0) {
+		Die();
+	}
+}
+
+void AKoalaBaseCharacter::Die()
+{
+	// TODO: Death stuff
+}
+
+void AKoalaBaseCharacter::ConsumeItem(AConsumable* Eucalyptus)
+{
+	if (!Eucalyptus) return;
+	Eucalyptus->Consume(this);
+}
+
+void AKoalaBaseCharacter::AddHealth(float Amount)
+{
+	// TODO: Any effects and sounds will play here
+	Health += Amount;
+	if (Health > 100) Health = 100;
+}
+
+void AKoalaBaseCharacter::AddStamina(float Amount)
+{
+	// TODO: Any effects and sounds will play here
+	Stamina += Amount;
+	if (Stamina > 100) Stamina = 100;
+}
+
+void AKoalaBaseCharacter::Sleep()
+{
+	if (IsSleeping()) return;  // Don't do anything if already sleeping
+	GetWorldTimerManager().ClearTimer(SleepTimerHandle);  // Clear already existing timer just in case.
+	FTimerDelegate TimerDelegate;
+	TimerDelegate.BindLambda([&]() {
+		// Wake up after sleeping for X seconds
+		if (GetController()->IsPlayerController()) {
+			EnableInput(Cast<APlayerController>(GetController()));
+		}
+		bIsSleeping = false;
+		Stamina = StaminaAfterSleep;
+		UE_LOG(LogTemp, Warning, TEXT("Awake..."));
+	});
+	if (GetController()->IsPlayerController()) {
+		DisableInput(Cast<APlayerController>(GetController()));
+	}
+	bIsSleeping = true;
+	UE_LOG(LogTemp, Warning, TEXT("Sleeping..."));
+	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
 }

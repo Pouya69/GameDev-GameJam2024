@@ -2,12 +2,16 @@
 
 
 #include "BaseInteractableObject.h"
+#include "Consumable.h"
 
 // Sets default values
 ABaseInteractableObject::ABaseInteractableObject()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	BaseMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(FName("Base Mesh"));
+	BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	BaseMeshComp->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 
 }
 
@@ -31,5 +35,12 @@ void ABaseInteractableObject::Tick(float DeltaTime)
 // See the header file
 void ABaseInteractableObject::Interact()
 {
+	// TODO: Any effects and sounds will play here
 	UE_LOG(LogTemp, Warning, TEXT("Interacting..."));
+}
+
+bool ABaseInteractableObject::IsConsumable() const
+{
+	// We can do further checks for here
+	return this->IsA(AConsumable::StaticClass());
 }

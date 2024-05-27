@@ -11,6 +11,7 @@
 #include "BaseTree.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Consumable.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -30,11 +31,15 @@ void AKoalaPlayerCharacter::BeginPlay()
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
+	UE_LOG(LogTemp, Warning, TEXT("MESH: %S"), *GetMesh()->GetFullName());
 }
 
 void AKoalaPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (IsCarryingItem()) {
+		// ItemCarriedOnBack
+	}
 
 }
 
@@ -50,13 +55,51 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Look);
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
+		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
 
 	}
 
 }
 
+void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
+{
+	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemToCarry->GetRootComponent());
+	PrimRootComp->SetSimulatePhysics(false);
+	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+
+	PrimRootComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ItemCarryBoneNameOnMesh);
+	ItemCarriedOnBack = ItemToCarry;
+	
+	UE_LOG(LogTemp, Warning, TEXT("Carrying: %s"), *ItemCarriedOnBack->GetFullName());
+}
+
+void AKoalaPlayerCharacter::DropCurrentCarriedItem()
+{
+	if (!IsCarryingItem()) return;
+
+	ItemCarriedOnBack->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemCarriedOnBack->GetRootComponent());
+	if (ItemCarriedOnBack->IsA(ACharacter::StaticClass())) {
+		PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	}
+	else {
+		PrimRootComp->SetSimulatePhysics(true);
+	}
+	// We can put the launching the object as well
+	// Works for normal objects for now
+	// BABY KOALAS STILL NEEDS TESTING. uncomment to check
+	/*
+	FVector LaunchImpulse = CameraComp->GetForwardVector() * ItemLaunchForceAmount * PrimRootComp->GetMass();
+	PrimRootComp->AddImpulse(LaunchImpulse);
+	*/
+	UE_LOG(LogTemp, Warning, TEXT("Dropping: %s"), *ItemCarriedOnBack->GetFullName());
+	ItemCarriedOnBack = nullptr;
+}
+
 void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 {
+	if (Super::IsSleeping()) return;  // Character cannot move but can look around when asleep
+
 	const FVector2D Input = Value.Get<FVector2D>();
 
 	const FRotator MyControlRotation = PlayerController->GetControlRotation();
@@ -87,7 +130,16 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 	{
 		if (bIsOnTree) {
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
-			AddMovementInput(MovementDirection, Input.Y*TreeClimbingSpeed);
+			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
+			CurrentTreeLocation.Z = GetActorLocation().Z;
+			FVector ActorUpTargetLocation = GetActorLocation() + (Input.Y * (TreeClimbingSpeed * 3) * MovementDirection);
+			FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, ActorUpTargetLocation);
+			FVector TargetLocation = CurrentTreeLocation + (Direction * TreeAttachmentRadius);
+			SetActorLocation(TargetLocation, true);
+			FRotator FinalRotation = (-1 * Direction).Rotation();
+			FinalRotation.Pitch = GetControlRotation().Pitch;
+			PlayerController->SetControlRotation(FinalRotation);
+			// AddMovementInput(MovementDirection, Input.X);
 			return;
 		}
 		const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
@@ -122,13 +174,19 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	// This Interact function is for picking things up, interacting with objects using the USE KEY
 	// This is more optimized I think.
 	FHitResult HitResult;
-	if (!GetObjectsAround(HitResult, InteractionRange)) return;
-
+	if (!GetObjectAround(HitResult, InteractionRange)) return;
 
 	if (ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor())) {
 		// NOTE: This is just an example. The tree attachment is on PlayerJump already
 		UE_LOG(LogTemp, Warning, TEXT("Tree Interacted"));
 	}
+	else if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
+		Super::ConsumeItem(Consumable);
+	}
+
+
+
+
 
 	/*
 	// Check if overlaps with something
@@ -148,6 +206,21 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 		UE_LOG(LogTemp, Warning, TEXT("Not Overlap"));
 	}
 	*/
+}
+
+void AKoalaPlayerCharacter::PickupAndCarryItem(const FInputActionValue& Value)
+{
+	if (IsCarryingItem()) {
+		DropCurrentCarriedItem();
+		return;
+	}
+	FHitResult HitResult;
+	if (!GetObjectAround(HitResult, InteractionRange)) return;
+	AActor* InteractedActor = HitResult.GetActor();
+	// Accepted items that can be carried on the back are below
+	if (InteractedActor->IsA(AKoalaBaseCharacter::StaticClass()) || InteractedActor->IsA(AConsumable::StaticClass())) {
+		CarryItemOnBack(InteractedActor);
+	}
 }
 
 void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
