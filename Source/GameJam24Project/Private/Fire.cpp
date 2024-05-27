@@ -2,13 +2,32 @@
 
 
 #include "Fire.h"
+#include "Math.h"
 #include "Engine/World.h"
+#include "TimerManager.h"
+#include "Components/BoxComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "UObject/ConstructorHelpers.h"
+
 
 // Sets default values
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
+	SetRootComponent(BoxComponent);
+	BoxComponent->InitBoxExtent(FVector(CollisionBoxExtent));
+
+	BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	BoxComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
+	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+
+	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh-> SetupAttachment(BoxComponent);
+
 
 }
 
@@ -16,46 +35,75 @@ AFire::AFire()
 void AFire::BeginPlay()
 {
 	Super::BeginPlay();
+
+	FVector Start = GetActorLocation();
+
+	// TODO Check where the safezone is so fire spread in that direction
+	SpreadDirections = TArray<FVector>{
+		Start +  FVector(0,  2 * CollisionBoxExtent, 0),
+		Start +  FVector(2 * CollisionBoxExtent,  2 * CollisionBoxExtent, 0),
+		Start +  FVector(2 * CollisionBoxExtent,  -2 * CollisionBoxExtent, 0),
+		Start +  FVector(0,  -2 * CollisionBoxExtent, 0),
+		Start +  FVector(2 * CollisionBoxExtent,  0, 0)
+	};
+
+	GetWorldTimerManager().SetTimer(SpreadTimer, this, &AFire::SpreadFire, SpreadTime, true);
 	
 }
 
 // Called every frame
 void AFire::Tick(float DeltaTime)
 {
-	Super::Tick(DeltaTime);  
-
-	/* TODO:
-	1. Each tick check if tile next is free in 5/8 directions (method IsSpaceFree)
-	2. If tile is free, spawn actor (method SpawnFire)
-	3. If all are occupied, interrupt tick, for performances (PrimaryActorTick.bCanEverTick = false;)
-	*/
-
+	Super::Tick(DeltaTime);
 }
 
-bool AFire::IsSpaceFree(FVector Location)
+
+void AFire::SpreadFire()
 {
-	/* TODO:
-	1. bool SweepSingleByChannel(
-		FHitResult& OutHit, 
-		const FVector& Start, 
-		const FVector& End, 
-		const FQuat& Rot, 
-		ECollisionChannel TraceChannel, 
-		const FCollisionShape& CollisionShape) const
+	if(!Mesh->GetStaticMesh() || SpreadDirections.IsEmpty())
+	{
+		GetWorldTimerManager().ClearAllTimersForObject(this);
+		return;	
+	} 
 
-	2. Basically just that, set up output params, if nullptr we can spawn. where to get instance of world for performances? UWorld* World{GetWorld()};
-	3. If objects can be set on fire, this also returns like space is free. EXTRA
-	*/
+	FVector Start = GetActorLocation();
+	FHitResult OutHitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	TArray<FVector> HitVector;
 
-    return false;
+	for(auto End : SpreadDirections )
+	{
+		bool bResult = GetWorld()->LineTraceSingleByChannel(OutHitResult, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
+		// DrawDebugLine(GetWorld(), Start, End, FColor::Red, true, 2.f);
+		if(bResult)
+		{
+			HitVector.Add(End);
+		}
+		else
+		{
+			SpawnFire(End);
+		}
+	}
+
+	for( auto Vector : HitVector)
+	{
+		SpreadDirections.Remove(Vector);
+	}
+
+	SpawnProbability += IncrementProbabilityRate;
+	
 }
 
-void AFire::SpawnFire()
+void AFire::SpawnFire(FVector Location)
 {
-	/* TODO:
-	1. Again get world reference and simply call SpawnActorAtLocation or similar?
-	2. Probability to spawn
-	3. If you want to set something on fire, should have actor to fire up and place tag? EXTRA
-	*/
+	if(FMath::RandRange(0,100) <= SpawnProbability)
+	{
+		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(AFire::StaticClass(), Location, GetActorRotation());
 
+		if(SpawnedFire)
+		{
+			SpawnedFire->Mesh->SetStaticMesh(Mesh->GetStaticMesh());
+		}
+	}
 }
