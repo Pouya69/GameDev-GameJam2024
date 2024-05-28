@@ -12,6 +12,10 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Consumable.h"
+#include "Components/CapsuleComponent.h"
+#include "KoalaBabyCharacter.h"
+#include "MissionObjectivesWidget.h"
+#include "BasicPlayerWidget.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -27,6 +31,8 @@ void AKoalaPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayerController = GetLocalViewingPlayerController();
+	MakeStartingWidgets();
+
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
@@ -40,6 +46,11 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 	if (IsCarryingItem()) {
 		// ItemCarriedOnBack
 	}
+	/*if (bIsOnTree) {
+		if (IsOnFire()) {
+			DetachFromCurrentTree();
+		}
+	}*/
 
 }
 
@@ -64,13 +75,25 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 {
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemToCarry->GetRootComponent());
-	PrimRootComp->SetSimulatePhysics(false);
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemToCarry)) {
+		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+		BabyCharacter->GetCharacterMovement()->StopMovementImmediately();
+		BabyCharacter->bIsBeingCarried = true;
+		BabyCharacter->GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Flying;
+		
 
+	}
+	else {
+		PrimRootComp->SetSimulatePhysics(false);
+	}
 	PrimRootComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ItemCarryBoneNameOnMesh);
+	
 	ItemCarriedOnBack = ItemToCarry;
 	
-	UE_LOG(LogTemp, Warning, TEXT("Carrying: %s"), *ItemCarriedOnBack->GetFullName());
+	// UE_LOG(LogTemp, Warning, TEXT("Carrying: %s"), *ItemCarriedOnBack->GetFullName());
 }
 
 void AKoalaPlayerCharacter::DropCurrentCarriedItem()
@@ -79,8 +102,14 @@ void AKoalaPlayerCharacter::DropCurrentCarriedItem()
 
 	ItemCarriedOnBack->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemCarriedOnBack->GetRootComponent());
-	if (ItemCarriedOnBack->IsA(ACharacter::StaticClass())) {
+	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);
+	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
 		PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);
+		BabyCharacter->GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
+		BabyCharacter->bIsBeingCarried = false;
+
 	}
 	else {
 		PrimRootComp->SetSimulatePhysics(true);
@@ -167,6 +196,20 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 	bIsOnTree = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	CurrentClimbingTree = nullptr;
+}
+
+void AKoalaPlayerCharacter::MakeStartingWidgets()
+{
+	if (ObjectivesWidgetClass) {
+		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
+		ObjectivesWidget->AddToViewport();
+		ObjectivesWidget->MakeObjectivesWidget_Implementation();
+		ObjectivesWidget->MakeObjectivesWidget();
+	}
+	if (BasicPlayerWidgetClass) {
+		BasicPlayerWidget = CreateWidget<UBasicPlayerWidget>(PlayerController, BasicPlayerWidgetClass);
+		BasicPlayerWidget->AddToViewport();
+	}
 }
 
 void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)

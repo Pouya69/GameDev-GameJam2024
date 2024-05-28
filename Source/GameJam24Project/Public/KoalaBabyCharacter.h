@@ -13,5 +13,7 @@ UCLASS()
 class GAMEJAM24PROJECT_API AKoalaBabyCharacter : public AKoalaBaseCharacter
 {
 	GENERATED_BODY()
-	
+
+public:
+	AKoalaBabyCharacter();
 };

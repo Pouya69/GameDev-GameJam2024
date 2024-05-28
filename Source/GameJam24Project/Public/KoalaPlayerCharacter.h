@@ -52,9 +52,12 @@ public:
 		float ItemLaunchForceAmount = 100.f;  // For launching the object IF we are doing it
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Interactions | Player")
 		AActor* ItemCarriedOnBack;  // For carrying koalas on the back or items etc. Should be AActor because Koala is Character and ABaseInteractableObject is another class itself
-	bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
+	
+	UFUNCTION(BlueprintCallable)
+		bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
 	void CarryItemOnBack(AActor* ItemToCarry);
 	void DropCurrentCarriedItem();
+
 	
 
 public:
@@ -67,6 +70,23 @@ public:
 		bool bIsOnTree;
 	class ABaseTree* CurrentClimbingTree;
 	void DetachFromCurrentTree();
+
+
+public:
+	// HUD and Widgets
+	UFUNCTION(BlueprintCallable)
+		void MakeStartingWidgets();
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+		class UMissionObjectivesWidget* ObjectivesWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<class UMissionObjectivesWidget> ObjectivesWidgetClass;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+		class UBasicPlayerWidget* BasicPlayerWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<class UBasicPlayerWidget> BasicPlayerWidgetClass;
+
+
 
 private:
 	void Move(const FInputActionValue& Value);

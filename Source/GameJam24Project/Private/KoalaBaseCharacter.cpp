@@ -7,6 +7,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Consumable.h"
+#include "KoalaPlayerCharacter.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -14,6 +15,8 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	// PrimaryActorTick.bCanEverTick = true;
 	CapsuleComp = Cast<UCapsuleComponent>(GetRootComponent());
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -29,14 +32,12 @@ void AKoalaBaseCharacter::BeginPlay()
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bIsBeingCarried) return;  // Stamina will not reduce if it is being carried
 	if (Stamina <= 0) {
 		Sleep();
 		return;
 	}
 	float StaminaFinalDeducationAmount = IsCharacterMoving() ? (StaminaDeductionRate * StaminaDeductionMultiplierMoving) : StaminaDeductionRate;
-	if (GetController()->IsPlayerController()) {
-		StaminaFinalDeducationAmount *= 0.5;  // Player will sleep at slower rate than babies
-	}
 	Stamina -= StaminaFinalDeducationAmount;
 	// UE_LOG(LogTemp, Warning, TEXT("Stamina: %f"), GetStamina());
 
@@ -65,6 +66,18 @@ bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeC
 	}
 
 	return bResult;
+}
+
+bool AKoalaBaseCharacter::IsOnFire() const
+{
+	/*TODO: Implement it*/
+	// TArray<AActor*> OverlapActors;
+	// GetOverlappingActors(OverlapActors, AFire::StaticClass());
+
+	// return !OverlapActors.IsEmpty();
+
+	// Delete line below
+	return false;
 }
 
 bool AKoalaBaseCharacter::IsCharacterMoving() const
@@ -105,6 +118,15 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 void AKoalaBaseCharacter::Die()
 {
 	// TODO: Death stuff
+	SetActorTickEnabled(false);
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
+		PlayerController->DisableInput(PlayerController);
+	}
+	// This line below alerts other listeners of the event that character has died
+	CapsuleComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);  // WIll no longer be pawn
+	bIsDead = true;
+	DeathEvent.Broadcast();
+	
 }
 
 void AKoalaBaseCharacter::ConsumeItem(AConsumable* Eucalyptus)
@@ -139,12 +161,15 @@ void AKoalaBaseCharacter::Sleep()
 		}
 		bIsSleeping = false;
 		Stamina = StaminaAfterSleep;
-		UE_LOG(LogTemp, Warning, TEXT("Awake..."));
+		UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 	});
 	if (GetController()->IsPlayerController()) {
 		DisableInput(Cast<APlayerController>(GetController()));
+		AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(this);
+		PlayerCharacter->DropCurrentCarriedItem();
+		PlayerCharacter->DetachFromCurrentTree();
 	}
 	bIsSleeping = true;
-	UE_LOG(LogTemp, Warning, TEXT("Sleeping..."));
+	UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
 }
