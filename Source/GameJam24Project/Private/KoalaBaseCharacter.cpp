@@ -104,6 +104,15 @@ void AKoalaBaseCharacter::DamageTakenHandle(AActor* DamagedActor, float Damage, 
 void AKoalaBaseCharacter::Die()
 {
 	// TODO: Death stuff
+	SetActorTickEnabled(false);
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
+		PlayerController->DisableInput(PlayerController);
+	}
+	// This line below alerts other listeners of the event that character has died
+	CapsuleComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);  // WIll no longer be pawn
+	bIsDead = true;
+	DeathEvent.Broadcast();
+	
 }
 
 void AKoalaBaseCharacter::ConsumeItem(AConsumable* Eucalyptus)

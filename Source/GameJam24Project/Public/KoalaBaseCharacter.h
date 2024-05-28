@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "KoalaBaseCharacter.generated.h"
 
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeath);
 UCLASS()
 class GAMEJAM24PROJECT_API AKoalaBaseCharacter : public ACharacter
 {
@@ -22,6 +24,16 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+public:
+	// Death
+	// Delegate signature
+	UFUNCTION(BlueprintCallable)
+		void Die();
+
+	FOnDeath& OnDeath() { return DeathEvent; }
+
+	
 
 	UCapsuleComponent* CapsuleComp;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")
@@ -55,8 +67,6 @@ public:
 	UFUNCTION()
 		void DamageTakenHandle(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 	UFUNCTION(BlueprintCallable)
-		void Die();
-	UFUNCTION(BlueprintCallable)
 		void ConsumeItem(class AConsumable* Eucalyptus);
 	UFUNCTION(BlueprintCallable)
 		void AddHealth(float Amount);
@@ -66,16 +76,21 @@ public:
 		void Sleep();
 	UFUNCTION(BlueprintCallable)
 		bool IsSleeping() const { return bIsSleeping; }
+	UFUNCTION(BlueprintCallable)
+		bool IsDead() const { return bIsDead; }
 	
 	FTimerHandle SleepTimerHandle;
 
 
 
 private:
+	/** Broadcasts whenever the layer changes */
+	FOnDeath DeathEvent;
+
 	float Health = 100;
 	float Stamina = 100;
 	bool bIsSleeping;
-
+	bool bIsDead;
 };
 
 
