@@ -14,9 +14,6 @@ void AKoalaGameModeBase::BeginPlay()
 	for (AActor* Actor : FindActors) {
 		MissionObjectives.Add(Cast<AMissionObjective>(Actor));
 	}
-	if (!MissionObjectives.IsEmpty()) {
-		// PlayerCharacter->MakeObjectivesWidget();
-	}
 	
 
 	FindActors.Empty();

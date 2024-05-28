@@ -68,6 +68,18 @@ bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeC
 	return bResult;
 }
 
+bool AKoalaBaseCharacter::IsOnFire() const
+{
+	/*TODO: Implement it*/
+	// TArray<AActor*> OverlapActors;
+	// GetOverlappingActors(OverlapActors, AFire::StaticClass());
+
+	// return !OverlapActors.IsEmpty();
+
+	// Delete line below
+	return false;
+}
+
 bool AKoalaBaseCharacter::IsCharacterMoving() const
 {
 	FVector Velocity = GetVelocity();

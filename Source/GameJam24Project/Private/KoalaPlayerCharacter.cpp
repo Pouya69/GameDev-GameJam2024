@@ -15,6 +15,7 @@
 #include "Components/CapsuleComponent.h"
 #include "KoalaBabyCharacter.h"
 #include "MissionObjectivesWidget.h"
+#include "BasicPlayerWidget.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -30,12 +31,8 @@ void AKoalaPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayerController = GetLocalViewingPlayerController();
-	if (ObjectivesWidgetClass) {
-		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
-		ObjectivesWidget->AddToViewport();
-		ObjectivesWidget->MakeObjectivesWidget_Implementation();
-		ObjectivesWidget->MakeObjectivesWidget();
-	}
+	MakeStartingWidgets();
+
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
@@ -49,6 +46,11 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 	if (IsCarryingItem()) {
 		// ItemCarriedOnBack
 	}
+	/*if (bIsOnTree) {
+		if (IsOnFire()) {
+			DetachFromCurrentTree();
+		}
+	}*/
 
 }
 
@@ -198,14 +200,15 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 
 void AKoalaPlayerCharacter::MakeStartingWidgets()
 {
-	MakeObjectivesWidget();
-}
-
-void AKoalaPlayerCharacter::MakeObjectivesWidget()
-{
-	if (ObjectivesWidget) {
+	if (ObjectivesWidgetClass) {
+		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
+		ObjectivesWidget->AddToViewport();
 		ObjectivesWidget->MakeObjectivesWidget_Implementation();
 		ObjectivesWidget->MakeObjectivesWidget();
+	}
+	if (BasicPlayerWidgetClass) {
+		BasicPlayerWidget = CreateWidget<UBasicPlayerWidget>(PlayerController, BasicPlayerWidgetClass);
+		BasicPlayerWidget->AddToViewport();
 	}
 }
 

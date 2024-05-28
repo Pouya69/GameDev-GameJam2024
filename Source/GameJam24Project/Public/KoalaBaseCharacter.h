@@ -29,6 +29,9 @@ public:
 	bool AreThereAnyTreesAround(FHitResult& OutHitResult) const;
 	bool GetObjectAround(FHitResult& OutHitResult, float RangeCheck) const;
 
+	UFUNCTION(BlueprintCallable)
+		bool IsOnFire() const;
+
 public:
 	// Stamina and Health
 	UFUNCTION(BlueprintCallable)
