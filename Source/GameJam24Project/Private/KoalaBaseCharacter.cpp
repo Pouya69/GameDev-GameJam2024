@@ -20,7 +20,7 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 void AKoalaBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
+	//OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
 	
 	
 }
@@ -77,15 +77,29 @@ bool AKoalaBaseCharacter::IsCharacterMoving() const
 	return Velocity.Length() >= MovementCheckSpeed;
 }
 
-void AKoalaBaseCharacter::DamageTakenHandle(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
+// Calling TakeDamage in this way caused the engine to crash (Something wrong from fire?). But using the Take damage below the problem is fixed 
+
+/* void AKoalaBaseCharacter::DamageTakenHandle(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 	// We need to do ApplyDamage in Fire class or whatever
 	FDamageEvent DamageEvent = FDamageEvent(UDamageType::StaticClass());
 	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
-	Health -= ActualDamage;
+	Health -= Damage;
 	if (Health <= 0) {
 		Die();
 	}
+} */
+
+float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEvent,  AController* InstigatedBy, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
+	Health -= Damage;
+	UE_LOG(LogTemp, Warning, TEXT("Damage taken. New Health %f"), Health);
+	if (Health <= 0) {
+		Die();
+	}
+
+	return ActualDamage;
 }
 
 void AKoalaBaseCharacter::Die()

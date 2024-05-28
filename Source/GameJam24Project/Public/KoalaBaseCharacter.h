@@ -47,8 +47,10 @@ public:
 		float StaminaAfterSleep = 50.f;
 	UFUNCTION(BlueprintCallable)
 		float GetHealth() const { return Health; }
+	/* UFUNCTION()
+		void DamageTakenHandle(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser); */
 	UFUNCTION()
-		void DamageTakenHandle(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+		virtual float TakeDamage(float Damage, struct FDamageEvent const &DamageEvent,  class AController* InstigatedBy, AActor* DamageCauser) override;
 	UFUNCTION(BlueprintCallable)
 		void Die();
 	UFUNCTION(BlueprintCallable)

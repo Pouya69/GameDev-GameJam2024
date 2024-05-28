@@ -6,15 +6,20 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Components/BoxComponent.h"
+#include "NiagaraComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
+#include "KoalaBaseCharacter.h"
+#include "Engine/DamageEvents.h"
 
 
 // Sets default values
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
 	SetRootComponent(BoxComponent);
@@ -23,11 +28,10 @@ AFire::AFire()
 	BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BoxComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 
-	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
-	Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Mesh-> SetupAttachment(BoxComponent);
-
+	Niagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
+	Niagara->SetupAttachment(BoxComponent);
 
 }
 
@@ -60,7 +64,7 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	if(!Mesh->GetStaticMesh() || SpreadDirections.IsEmpty())
+	if(!Niagara || SpreadDirections.IsEmpty())
 	{
 		GetWorldTimerManager().ClearAllTimersForObject(this);
 		return;	
@@ -74,9 +78,9 @@ void AFire::SpreadFire()
 
 	for(auto End : SpreadDirections )
 	{
-		bool bResult = GetWorld()->LineTraceSingleByChannel(OutHitResult, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
+		const bool bLineTraceHasHit = GetWorld()->LineTraceSingleByChannel(OutHitResult, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
 		// DrawDebugLine(GetWorld(), Start, End, FColor::Red, true, 2.f);
-		if(bResult)
+		if(bLineTraceHasHit)
 		{
 			HitVector.Add(End);
 		}
@@ -100,10 +104,20 @@ void AFire::SpawnFire(FVector Location)
 	if(FMath::RandRange(0,100) <= SpawnProbability)
 	{
 		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(AFire::StaticClass(), Location, GetActorRotation());
-
 		if(SpawnedFire)
 		{
-			SpawnedFire->Mesh->SetStaticMesh(Mesh->GetStaticMesh());
+			SpawnedFire->Niagara = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraTemplate, Location + FVector(0, 0, NiagaraParticleZOffset), FRotator::ZeroRotator, FVector(NiagaraParticleScale));
+			SpawnedFire->NiagaraTemplate = NiagaraTemplate;
 		}
+	}
+}
+
+
+void AFire::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult)
+{
+	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
+	if(bIsAKoala)
+	{
+		UGameplayStatics::ApplyDamage(OtherActor, 10.f, nullptr, this, UDamageType::StaticClass());
 	}
 }
