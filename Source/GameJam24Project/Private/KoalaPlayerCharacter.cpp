@@ -14,6 +14,7 @@
 #include "Consumable.h"
 #include "Components/CapsuleComponent.h"
 #include "KoalaBabyCharacter.h"
+#include "MissionObjectivesWidget.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -29,6 +30,12 @@ void AKoalaPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayerController = GetLocalViewingPlayerController();
+	if (ObjectivesWidgetClass) {
+		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
+		ObjectivesWidget->AddToViewport();
+		ObjectivesWidget->MakeObjectivesWidget_Implementation();
+		ObjectivesWidget->MakeObjectivesWidget();
+	}
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
@@ -187,6 +194,19 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 	bIsOnTree = false;
 	GetCharacterMovement()->bOrientRotationToMovement = false;
 	CurrentClimbingTree = nullptr;
+}
+
+void AKoalaPlayerCharacter::MakeStartingWidgets()
+{
+	MakeObjectivesWidget();
+}
+
+void AKoalaPlayerCharacter::MakeObjectivesWidget()
+{
+	if (ObjectivesWidget) {
+		ObjectivesWidget->MakeObjectivesWidget_Implementation();
+		ObjectivesWidget->MakeObjectivesWidget();
+	}
 }
 
 void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)

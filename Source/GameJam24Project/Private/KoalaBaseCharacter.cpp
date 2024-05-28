@@ -7,6 +7,7 @@
 #include "Engine/DamageEvents.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Consumable.h"
+#include "KoalaPlayerCharacter.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -129,6 +130,9 @@ void AKoalaBaseCharacter::Sleep()
 	});
 	if (GetController()->IsPlayerController()) {
 		DisableInput(Cast<APlayerController>(GetController()));
+		AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(this);
+		PlayerCharacter->DropCurrentCarriedItem();
+		PlayerCharacter->DetachFromCurrentTree();
 	}
 	bIsSleeping = true;
 	UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());

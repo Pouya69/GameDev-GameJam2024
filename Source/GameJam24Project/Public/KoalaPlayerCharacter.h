@@ -68,6 +68,19 @@ public:
 	class ABaseTree* CurrentClimbingTree;
 	void DetachFromCurrentTree();
 
+
+public:
+	// HUD and Widgets
+	UFUNCTION(BlueprintCallable)
+		void MakeStartingWidgets();
+	UFUNCTION(BlueprintCallable)
+		void MakeObjectivesWidget();
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
+		class UMissionObjectivesWidget* ObjectivesWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<class UMissionObjectivesWidget> ObjectivesWidgetClass;
+
+
 private:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);

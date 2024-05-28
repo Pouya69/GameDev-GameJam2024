@@ -11,6 +11,7 @@ ABaseInteractableObject::ABaseInteractableObject()
 	PrimaryActorTick.bCanEverTick = true;
 	BaseMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(FName("Base Mesh"));
 	BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	// BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	BaseMeshComp->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 
 }
