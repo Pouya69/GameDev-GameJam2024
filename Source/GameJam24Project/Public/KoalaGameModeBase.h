@@ -19,7 +19,7 @@ public:
 		TArray<class AMissionObjective*> MissionObjectives;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		int BabyKoalasAlive;
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int MinBabyKoalasAliveNeeded = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		TSubclassOf<class AMissionObjective> ObjectiveClass;
@@ -40,6 +40,13 @@ public:
 		void GameOver(bool bWon, const FString& Message);
 	UFUNCTION(BlueprintCallable)
 		void EndGame();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Extraction")
+		int ExtractionTimeSinceStart;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Extraction")
+		int TimeLeftExtraction;
+	void SetupTimerForEndGame();
+	FTimerHandle TimerHandleExtraction;
 
 protected:
 	// Called when the game starts or when spawned

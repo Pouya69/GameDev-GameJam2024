@@ -28,6 +28,7 @@ void AKoalaGameModeBase::BeginPlay()
 
 	ExtractionArea = Cast<AExtractionArea>(UGameplayStatics::GetActorOfClass(GetWorld(), ExtractionAreaClass));
 
+	SetupTimerForEndGame();
 }
 
 
@@ -93,4 +94,18 @@ void AKoalaGameModeBase::EndGame()
 	}
 	
 	GameOver(false, Message);
+}
+
+void AKoalaGameModeBase::SetupTimerForEndGame()
+{
+	TimeLeftExtraction = ExtractionTimeSinceStart;
+	FTimerDelegate TimerDelegateExtraction;
+	TimerDelegateExtraction.BindLambda([&]() {
+		TimeLeftExtraction--;
+		if (TimeLeftExtraction < 0) {
+			GetWorldTimerManager().ClearTimer(TimerHandleExtraction);
+			EndGame();
+		}
+	});
+	GetWorldTimerManager().SetTimer(TimerHandleExtraction, TimerDelegateExtraction, 1, true);
 }

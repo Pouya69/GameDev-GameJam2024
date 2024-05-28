@@ -38,9 +38,11 @@ void AExtractionArea::OverlapBegin(UPrimitiveComponent* OverlappedComponent, AAc
 {
 	if (OtherActor->IsA(AKoalaPlayerCharacter::StaticClass())) {
 		bIsPlayerInArea = true;
+		UE_LOG(LogTemp, Warning, TEXT("Player IN extraction area"));
 	}
 	else if (OtherActor->IsA(AKoalaBabyCharacter::StaticClass())) {
 		BabyKoalasNum++;
+		UE_LOG(LogTemp, Warning, TEXT("Baby koalas in extraction area: %d"), BabyKoalasNum);
 	}
 }
 
@@ -48,9 +50,11 @@ void AExtractionArea::OverlapEnd(UPrimitiveComponent* OverlappedComponent, AActo
 {
 	if (OtherActor->IsA(AKoalaPlayerCharacter::StaticClass())) {
 		bIsPlayerInArea = false;
+		UE_LOG(LogTemp, Warning, TEXT("Player OUT OF extraction area"));
 	}
 	else if (OtherActor->IsA(AKoalaBabyCharacter::StaticClass())) {
 		BabyKoalasNum--;
 		if (BabyKoalasNum < 0) BabyKoalasNum = 0;
+		UE_LOG(LogTemp, Warning, TEXT("Baby koalas in extraction area: %d"), BabyKoalasNum);
 	}
 }
