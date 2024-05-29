@@ -16,6 +16,7 @@
 #include "KoalaBabyCharacter.h"
 #include "MissionObjectivesWidget.h"
 #include "BasicPlayerWidget.h"
+#include "Gun.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -37,6 +38,11 @@ void AKoalaPlayerCharacter::BeginPlay()
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
+
+	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
+	Gun->AttachToComponent( GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("weapon_socket"));
+	Gun->SetOwner(this);
+
 	UE_LOG(LogTemp, Warning, TEXT("MESH: %S"), *GetMesh()->GetFullName());
 }
 

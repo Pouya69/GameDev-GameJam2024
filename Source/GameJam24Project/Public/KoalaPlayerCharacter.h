@@ -42,6 +42,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		class USpringArmComponent* SpringArmComp;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Shooting");
+		TSubclassOf<class AGun>  GunClass;
+	
+
 public:
 	// Interactions
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
@@ -112,5 +116,8 @@ private:
 		UInputAction* CarryItemAction;
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* ShootAction;
+
+	UPROPERTY()
+		class AGun* Gun;
 
 };
