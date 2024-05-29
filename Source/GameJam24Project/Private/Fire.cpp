@@ -19,7 +19,7 @@
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	
 	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
 	SetRootComponent(BoxComponent);
@@ -28,7 +28,9 @@ AFire::AFire()
 	BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BoxComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+
 	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
+	BoxComponent->OnComponentEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 
 	Niagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
 	Niagara->SetupAttachment(BoxComponent);
@@ -113,11 +115,40 @@ void AFire::SpawnFire(FVector Location)
 }
 
 
-void AFire::OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult)
+void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherActor,  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult)
+{
+	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
+	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
+	
+	const bool bTimerExists = GetWorldTimerManager(). TimerExists(DamageTimer);
+	if(bIsAKoala)
+	{
+		bIsOverlapping = true;
+		if(!bTimerExists)
+		{
+			ActorToDamage = OtherActor;
+			// UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, UDamageType::StaticClass());
+			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
+		}
+	}
+}
+
+void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
 	if(bIsAKoala)
 	{
-		UGameplayStatics::ApplyDamage(OtherActor, 10.f, nullptr, this, UDamageType::StaticClass());
+		bIsOverlapping = false;	
 	}
+}
+
+
+void AFire::ApplyDamageTimer()
+{
+	if(!bIsOverlapping)
+	{
+		GetWorldTimerManager().ClearTimer(DamageTimer);
+		return;
+	}
+	UGameplayStatics::ApplyDamage(ActorToDamage, Damage, nullptr, this, UDamageType::StaticClass());
 }

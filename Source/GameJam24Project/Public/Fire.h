@@ -24,6 +24,9 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
+	float Damage = 5.f;
+
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float SpreadTime = 3.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
@@ -55,17 +58,22 @@ public:
 	UFUNCTION()
 	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult);
 
+	UFUNCTION()
+	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
 private:
 
 	FTimerHandle SpreadTimer;
 	FTimerHandle DamageTimer;
-
+	AActor* ActorToDamage;
 	TArray<FVector> SpreadDirections;
+	bool bIsOverlapping = false;
 
-	UPROPERTY(EditAnywhere, Category="Custom Properties")
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float SpawnProbability = 5.f;
 	
-	UPROPERTY(EditAnywhere, Category="Custom Properties")
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float IncrementProbabilityRate = 5.f;
 
 };
