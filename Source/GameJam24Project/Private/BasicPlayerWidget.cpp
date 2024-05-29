@@ -3,7 +3,6 @@
 
 #include "BasicPlayerWidget.h"
 #include "KoalaPlayerCharacter.h"
-#include "Kismet/GameplayStatics.h"
 
 void UBasicPlayerWidget::NativeConstruct()
 {
@@ -19,11 +18,15 @@ float UBasicPlayerWidget::GetHealth() const
 
 float UBasicPlayerWidget::GetStamina() const
 {
-	// UE_LOG(LogTemp, Warning, TEXT("STAMINA WIDGET: %f"), PlayerCharacter->GetStamina());
 	return PlayerCharacter->GetStamina() / 100;
 }
 
 bool UBasicPlayerWidget::IsOnFire() const
 {
 	return PlayerCharacter->IsOnFire();
+}
+
+float UBasicPlayerWidget::GetTimeLeft() const
+{
+	return PlayerCharacter->GetTimeLeftProportional();
 }

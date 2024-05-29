@@ -26,4 +26,6 @@ private:
 		float GetStamina() const;
 	UFUNCTION(BlueprintCallable)
 		bool IsOnFire() const;
+	UFUNCTION(BlueprintCallable)
+		float GetTimeLeft() const;
 };

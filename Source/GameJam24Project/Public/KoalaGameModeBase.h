@@ -33,8 +33,11 @@ public:
 	class AKoalaPlayerCharacter* PlayerCharacter;
 	class AExtractionArea* ExtractionArea;
 
-	void OnPlayerCharacterDeath();
-	void OnBabyKoalaDeath();
+	UFUNCTION()
+		void OnPlayerCharacterDeath();
+	UFUNCTION()
+		void OnBabyKoalaDeath();
+	void DisablePlayerInput();
 
 	UFUNCTION(BlueprintCallable)
 		void GameOver(bool bWon, const FString& Message);

@@ -27,7 +27,7 @@ AFire::AFire()
 
 	BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	BoxComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 
 	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 	BoxComponent->OnComponentEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
@@ -73,27 +73,34 @@ void AFire::SpreadFire()
 	} 
 
 	FVector Start = GetActorLocation();
-	FHitResult OutHitResult;
+	TArray<FHitResult> OutHitResults;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	TArray<FVector> HitVector;
 
 	for(auto End : SpreadDirections )
 	{
-		const bool bLineTraceHasHit = GetWorld()->LineTraceSingleByChannel(OutHitResult, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
+		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_WorldStatic, Params);
+		bool bShouldSpawn = true;
 		// DrawDebugLine(GetWorld(), Start, End, FColor::Red, true, 2.f);
 		if(bLineTraceHasHit)
 		{
-			HitVector.Add(End);
+			for (FHitResult HitResult : OutHitResults) {
+				if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
+					HitVector.Add(End);
+					bShouldSpawn = false;
+					break;
+				}
+			}
 		}
-		else
-		{
+		if (bShouldSpawn) {
 			SpawnFire(End);
 		}
 	}
 
 	for( auto Vector : HitVector)
 	{
+		UE_LOG(LogTemp, Warning, TEXT(""));
 		SpreadDirections.Remove(Vector);
 	}
 
@@ -108,6 +115,7 @@ void AFire::SpawnFire(FVector Location)
 		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(AFire::StaticClass(), Location, GetActorRotation());
 		if(SpawnedFire)
 		{
+			SpawnedFire->Damage = this->Damage;
 			SpawnedFire->Niagara = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraTemplate, Location + FVector(0, 0, NiagaraParticleZOffset), FRotator::ZeroRotator, FVector(NiagaraParticleScale));
 			SpawnedFire->NiagaraTemplate = NiagaraTemplate;
 		}
