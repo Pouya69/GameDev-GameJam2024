@@ -94,6 +94,7 @@ private:
 	void Interact(const FInputActionValue& Value);
 	void PickupAndCarryItem(const FInputActionValue& Value);
 	void PlayerJump(const FInputActionValue& Value);
+	void Shoot(const FInputActionValue& Value);
 
 private:
 	// Actions
@@ -109,5 +110,7 @@ private:
 		UInputAction* InteractAction;
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* CarryItemAction;
+	UPROPERTY(EditAnywhere, Category = "Input")
+		UInputAction* ShootAction;
 
 };

@@ -67,7 +67,7 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
-
+		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Shoot);
 	}
 
 }
@@ -296,4 +296,10 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	
 
 	Super::Jump();
+}
+
+
+void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
+{
+	UE_LOG(LogTemp, Warning, TEXT("SHOOOOOOOOOOOOOT"));
 }
