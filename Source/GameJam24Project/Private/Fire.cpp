@@ -119,13 +119,17 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 {
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
+	
+	const bool bTimerExists = GetWorldTimerManager(). TimerExists(DamageTimer);
 	if(bIsAKoala)
 	{
 		bIsOverlapping = true;
-		ActorToDamage = OtherActor;
-		UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, UDamageType::StaticClass());
-		GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true);
-
+		if(!bTimerExists)
+		{
+			ActorToDamage = OtherActor;
+			// UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, UDamageType::StaticClass());
+			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
+		}
 	}
 }
 

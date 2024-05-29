@@ -45,6 +45,8 @@ public:
 		float SleepDelay = 3.f;
 	UPROPERTY(EditAnywhere, Category = "Stamina")
 		float StaminaAfterSleep = 50.f;
+	UPROPERTY(EditAnywhere, Category = "Health")
+		float TimeBetweenDamage = 1.f;
 	UFUNCTION(BlueprintCallable)
 		float GetHealth() const { return Health; }
 	/* UFUNCTION()
@@ -70,6 +72,7 @@ public:
 private:
 	float Health = 100;
 	float Stamina = 100;
+	float LastDamageTime = 0;
 	bool bIsSleeping;
 
 };

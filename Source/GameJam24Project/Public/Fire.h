@@ -24,7 +24,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	float Damage = 10.f;
+	float Damage = 5.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float SpreadTime = 3.f;

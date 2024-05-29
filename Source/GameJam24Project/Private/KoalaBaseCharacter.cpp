@@ -92,6 +92,12 @@ bool AKoalaBaseCharacter::IsCharacterMoving() const
 
 float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEvent,  AController* InstigatedBy, AActor* DamageCauser)
 {
+	const bool bShouldTakeDamage =  GetWorld()->GetTimeSeconds()  - LastDamageTime > TimeBetweenDamage;
+	if(!bShouldTakeDamage)
+	{
+		return 0;
+	}
+	LastDamageTime = GetWorld()->GetTimeSeconds();
 	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
 	Health -= Damage;
 	UE_LOG(LogTemp, Warning, TEXT("Damage taken. New Health %f"), Health);
