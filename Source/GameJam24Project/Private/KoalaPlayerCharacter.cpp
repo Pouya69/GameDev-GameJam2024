@@ -307,5 +307,9 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SHOOOOOOOOOOOOOT"));
+	if(Gun)
+	{
+		Gun->PullTrigger();
+	}
+	
 }
