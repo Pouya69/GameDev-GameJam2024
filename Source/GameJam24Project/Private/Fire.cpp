@@ -66,6 +66,7 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
+	UE_LOG(LogTemp, Warning, TEXT("I am %s"), *GetName());
 	if(!Niagara || SpreadDirections.IsEmpty())
 	{
 		GetWorldTimerManager().ClearAllTimersForObject(this);
@@ -82,10 +83,10 @@ void AFire::SpreadFire()
 	{
 		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_WorldStatic, Params);
 		bool bShouldSpawn = true;
-		// DrawDebugLine(GetWorld(), Start, End, FColor::Red, true, 2.f);
 		if(bLineTraceHasHit)
 		{
 			for (FHitResult HitResult : OutHitResults) {
+				
 				if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
 					HitVector.Add(End);
 					bShouldSpawn = false;
@@ -94,13 +95,12 @@ void AFire::SpreadFire()
 			}
 		}
 		if (bShouldSpawn) {
-			SpawnFire(End);
+			SpawnFire(End, HitVector);
 		}
 	}
 
 	for( auto Vector : HitVector)
 	{
-		UE_LOG(LogTemp, Warning, TEXT(""));
 		SpreadDirections.Remove(Vector);
 	}
 
@@ -108,16 +108,14 @@ void AFire::SpreadFire()
 	
 }
 
-void AFire::SpawnFire(FVector Location)
+void AFire::SpawnFire(FVector Location, TArray<FVector>& HitVector)
 {
 	if(FMath::RandRange(0,100) <= SpawnProbability)
 	{
-		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(AFire::StaticClass(), Location, GetActorRotation());
-		if(SpawnedFire)
+
+		if (AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(FireClass, Location, GetActorRotation()))
 		{
-			SpawnedFire->Damage = this->Damage;
-			SpawnedFire->Niagara = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraTemplate, Location + FVector(0, 0, NiagaraParticleZOffset), FRotator::ZeroRotator, FVector(NiagaraParticleScale));
-			SpawnedFire->NiagaraTemplate = NiagaraTemplate;
+			HitVector.Add(Location);
 		}
 	}
 }
@@ -150,6 +148,12 @@ void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor
 	}
 }
 
+float AFire::TakeDamage(float Damage, FDamageEvent const &DamageEvent, AController *InstigatedBy, AActor *DamageCauser)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Should Destroy"));
+	Destroy();
+    return 0.0f;
+}
 
 void AFire::ApplyDamageTimer()
 {
@@ -158,5 +162,5 @@ void AFire::ApplyDamageTimer()
 		GetWorldTimerManager().ClearTimer(DamageTimer);
 		return;
 	}
-	UGameplayStatics::ApplyDamage(ActorToDamage, Damage, nullptr, this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(ActorToDamage, TickDamage, nullptr, this, UDamageType::StaticClass());
 }

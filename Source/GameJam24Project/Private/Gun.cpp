@@ -49,11 +49,11 @@ void AGun::PullTrigger()
 	// FVector Start = GetMesh()->GetSocketLocation(FName("muzzle"));
 	FVector Start = GetActorLocation();
 	FVector End = Start + (Controller->GetControlRotation().Vector() * FireRange);
-	SpawnEmitterJetEffect(Start, End);
-
+	// SpawnEmitterJetEffect(Start, End);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Blue,true, 1.f);
 	if(GunTrace(HitResult))
 	{
-
+		UE_LOG(LogTemp, Warning, TEXT("Trying to hit something..."));
 		//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, HitResult.Location, ShotDirection.Rotation());
 		//UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ImpactSound, HitResult.Location);		
 		AActor* ResultActor = HitResult.GetActor();
