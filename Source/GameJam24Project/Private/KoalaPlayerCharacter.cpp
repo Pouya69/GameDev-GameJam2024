@@ -41,10 +41,13 @@ void AKoalaPlayerCharacter::BeginPlay()
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
-
-	Gun = GetWorld()->SpawnActor<AGun>(GunClass);
-	Gun->AttachToComponent( GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("weapon_socket"));
-	Gun->SetOwner(this);
+	if(GunClass)
+	{ 
+		UE_LOG(LogTemp, Warning, TEXT("Spawning %s"), *GunClass->GetName());
+		Gun = GetWorld()->SpawnActor<AGun>(GunClass);
+		Gun->AttachToComponent( GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("weapon_socket"));
+		Gun->SetOwner(this);
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("MESH: %S"), *GetMesh()->GetFullName());
 }

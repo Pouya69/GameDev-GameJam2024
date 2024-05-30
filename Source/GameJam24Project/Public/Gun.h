@@ -29,8 +29,21 @@ public:
 	class USkeletalMeshComponent* MeshComponent;
 
 	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* Niagara;
+
+	UPROPERTY(EditAnywhere)
 	class USceneComponent* Root;
 
+	UPROPERTY(EditAnywhere)
+	float FireRange = 10000;
 
+	UPROPERTY(EditAnywhere)
+	float Damage = 50;
+
+private:
+	AController* GetOwnerController() const;
+	bool GunTrace(FHitResult& Hit);
+
+	void SpawnEmitterJetEffect(const FVector& Start, const FVector& End);
 
 };
