@@ -25,8 +25,21 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="Gun Properties")
 	class USkeletalMeshComponent* MeshComponent;
+	
+	UPROPERTY(EditAnywhere, Category="Gun Properties")
+	float FireRange = 1000.f;
+
+	UPROPERTY(EditAnywhere, Category="Gun Properties")
+	float Damage = 50.f;
+
+	UPROPERTY(EditAnywhere, Category="Gun Properties")
+	float AmmunitionCapacity = 1000.f;
+
+	UPROPERTY(EditAnywhere, Category="Gun Properties")
+	float AmmoConsumeRate = 1.f;
+
 
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* Niagara;
@@ -34,16 +47,15 @@ public:
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* Root;
 
-	UPROPERTY(EditAnywhere)
-	float FireRange = 10000;
-
-	UPROPERTY(EditAnywhere)
-	float Damage = 50;
+	UFUNCTION()
+	void ReloadAmmunition();
 
 private:
 	AController* GetOwnerController() const;
 	bool GunTrace(FHitResult& Hit);
+	float Ammunition = AmmunitionCapacity;
 
 	void SpawnEmitterJetEffect(const FVector& Start, const FVector& End);
+	
 
 };

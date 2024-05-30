@@ -66,7 +66,6 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	UE_LOG(LogTemp, Warning, TEXT("I am %s"), *GetName());
 	if(!Niagara || SpreadDirections.IsEmpty())
 	{
 		GetWorldTimerManager().ClearAllTimersForObject(this);
@@ -133,7 +132,6 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 		if(!bTimerExists)
 		{
 			ActorToDamage = OtherActor;
-			// UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, UDamageType::StaticClass());
 			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
 		}
 	}
@@ -150,7 +148,6 @@ void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor
 
 float AFire::TakeDamage(float Damage, FDamageEvent const &DamageEvent, AController *InstigatedBy, AActor *DamageCauser)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Should Destroy"));
 	Destroy();
     return 0.0f;
 }

@@ -41,7 +41,14 @@ void AGun::Tick(float DeltaTime)
 
 void AGun::PullTrigger()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Gun trigger pulled"));
+	
+	UE_LOG(LogTemp, Warning, TEXT("Ammo: %f"), Ammunition);
+	if(!Ammunition)
+	{
+		return;
+	}
+	
+	Ammunition -= AmmoConsumeRate;
 	FHitResult HitResult;
 	AController* Controller = GetOwnerController();
 
@@ -50,10 +57,9 @@ void AGun::PullTrigger()
 	FVector Start = GetActorLocation();
 	FVector End = Start + (Controller->GetControlRotation().Vector() * FireRange);
 	// SpawnEmitterJetEffect(Start, End);
-	DrawDebugLine(GetWorld(), Start, End, FColor::Blue,true, 1.f);
+	DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.f);
 	if(GunTrace(HitResult))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Trying to hit something..."));
 		//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, HitResult.Location, ShotDirection.Rotation());
 		//UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ImpactSound, HitResult.Location);		
 		AActor* ResultActor = HitResult.GetActor();
@@ -61,9 +67,7 @@ void AGun::PullTrigger()
 		if(ResultActor != nullptr)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("Hitting %s"),*ResultActor->GetName());
-			//FPointDamageEvent DamageEvent(Damage, HitResult, ShotDirection, nullptr);
 			UGameplayStatics::ApplyDamage(ResultActor, Damage, nullptr, this, UDamageType::StaticClass());
-			// ResultActor->TakeDamage(Damage, DamageEvent, Controller, this);
 		}
 	}
 }
@@ -113,4 +117,9 @@ AController* AGun::GetOwnerController() const
 		return nullptr;
 	}
 	return OwnerPawn -> GetController();
+}
+
+void AGun::ReloadAmmunition()
+{
+	Ammunition = AmmunitionCapacity;
 }

@@ -139,10 +139,10 @@ void AKoalaBaseCharacter::Die()
 	
 }
 
-void AKoalaBaseCharacter::ConsumeItem(AConsumable* Eucalyptus)
+void AKoalaBaseCharacter::ConsumeItem(AConsumable* Consumable)
 {
-	if (!Eucalyptus) return;
-	Eucalyptus->Consume(this);
+	if (!Consumable) return;
+	Consumable->Consume(this);
 }
 
 void AKoalaBaseCharacter::AddHealth(float Amount)

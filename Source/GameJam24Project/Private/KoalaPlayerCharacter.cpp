@@ -79,7 +79,7 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
-		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Shoot);
+		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Shoot);
 	}
 
 }
@@ -243,6 +243,15 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	}
 	else if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
 		Super::ConsumeItem(Consumable);
+
+		// TODO This is temporary! Cannot operate on something that will affect this class from the parent.
+		if(Consumable->ItemType == EConsumableType::WATER)
+		{
+			if(Gun)
+			{
+				Gun->ReloadAmmunition();
+			}
+		}
 	}
 
 
