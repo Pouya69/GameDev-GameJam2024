@@ -25,7 +25,6 @@ void AKoalaGameModeBase::BeginPlay()
 		BabyKoalasAlive++;
 	}
 	FindActors.Empty();
-
 	ExtractionArea = Cast<AExtractionArea>(UGameplayStatics::GetActorOfClass(GetWorld(), ExtractionAreaClass));
 
 	SetupTimerForEndGame();
@@ -34,6 +33,10 @@ void AKoalaGameModeBase::BeginPlay()
 
 bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMissionObjective* Objective)
 {
+	if (!Objective) {
+		UE_LOG(LogTemp, Error, TEXT("Objective Error in CheckPlayerAndCompleteObjective in GameMode"));
+		return false;
+	}
 	if (Objective->bIsObjectiveDone) return true;
 	if (OtherActor == nullptr) {
 		// No need for Player Character Reference. We can check without it
@@ -59,6 +62,8 @@ void AKoalaGameModeBase::OnBabyKoalaDeath()
 		FString Message = FString("You have failed to rescue the koalas...");
 		GameOver(false, Message);
 	}
+
+	PlayerCharacter->UpdateKoalasAliveWidget();
 }
 
 void AKoalaGameModeBase::DisablePlayerInput()

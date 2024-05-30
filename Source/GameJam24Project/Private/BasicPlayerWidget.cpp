@@ -12,6 +12,10 @@ void UBasicPlayerWidget::NativeConstruct()
 }
 
 
+void UBasicPlayerWidget::MakeKoalaItemsWidget_Implementation()
+{
+}
+
 float UBasicPlayerWidget::GetHealth() const
 {
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetHealth() / 100 : 0.f;

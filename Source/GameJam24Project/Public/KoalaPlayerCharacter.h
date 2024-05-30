@@ -90,6 +90,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 		int GetBabyKoalasLeft() const;
 
+	void UpdateKoalasAliveWidget();
 
 private:
 	void Move(const FInputActionValue& Value);

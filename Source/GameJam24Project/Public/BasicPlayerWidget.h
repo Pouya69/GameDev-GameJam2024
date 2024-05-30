@@ -20,6 +20,14 @@ protected:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int TotalBabyKoalas;
+
+	DECLARE_EVENT(FLayerViewModel, FMakeKoalaItems)
+	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
+		void MakeKoalaItemsWidget();
+
+	FMakeKoalaItems& OnMakeKoalaItems() { return MakeKoalaItems; }
+
+	virtual void MakeKoalaItemsWidget_Implementation();
 private:
 	class AKoalaPlayerCharacter* PlayerCharacter;
 
@@ -33,4 +41,7 @@ private:
 		float GetTimeLeft() const;
 	UFUNCTION(BlueprintCallable)
 		int GetBabyKoalasLeft() const;
+
+	FMakeKoalaItems MakeKoalaItems;
+
 };

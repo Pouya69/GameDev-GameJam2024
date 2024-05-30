@@ -211,6 +211,13 @@ int AKoalaPlayerCharacter::GetBabyKoalasLeft() const
 	return GameMode->BabyKoalasAlive;
 }
 
+void AKoalaPlayerCharacter::UpdateKoalasAliveWidget()
+{
+	if (BasicPlayerWidget == nullptr) return;
+	BasicPlayerWidget->MakeKoalaItemsWidget_Implementation();
+	BasicPlayerWidget->MakeKoalaItemsWidget();
+}
+
 void AKoalaPlayerCharacter::MakeStartingWidgets()
 {
 	
@@ -223,6 +230,7 @@ void AKoalaPlayerCharacter::MakeStartingWidgets()
 	if (BasicPlayerWidgetClass) {
 		BasicPlayerWidget = CreateWidget<UBasicPlayerWidget>(PlayerController, BasicPlayerWidgetClass);
 		BasicPlayerWidget->AddToViewport();
+		UpdateKoalasAliveWidget();
 	}
 }
 
