@@ -86,6 +86,7 @@ void AFire::SpreadFire()
 		if(bLineTraceHasHit)
 		{
 			for (FHitResult HitResult : OutHitResults) {
+				
 				if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
 					HitVector.Add(End);
 					bShouldSpawn = false;
@@ -94,7 +95,7 @@ void AFire::SpreadFire()
 			}
 		}
 		if (bShouldSpawn) {
-			SpawnFire(End);
+			SpawnFire(End, HitVector);
 		}
 	}
 
@@ -107,11 +108,15 @@ void AFire::SpreadFire()
 	
 }
 
-void AFire::SpawnFire(FVector Location)
+void AFire::SpawnFire(FVector Location, TArray<FVector>& HitVector)
 {
 	if(FMath::RandRange(0,100) <= SpawnProbability)
 	{
-		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(FireClass, Location, GetActorRotation());
+
+		if (AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(FireClass, Location, GetActorRotation()))
+		{
+			HitVector.Add(Location);
+		}
 	}
 }
 
@@ -144,6 +149,11 @@ void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor
 	}
 }
 
+float AFire::TakeDamage(float Damage, FDamageEvent const &DamageEvent, AController *InstigatedBy, AActor *DamageCauser)
+{
+	Destroy();
+    return 0.0f;
+}
 
 void AFire::ApplyDamageTimer()
 {
@@ -152,5 +162,5 @@ void AFire::ApplyDamageTimer()
 		GetWorldTimerManager().ClearTimer(DamageTimer);
 		return;
 	}
-	UGameplayStatics::ApplyDamage(ActorToDamage, Damage, nullptr, this, UDamageType::StaticClass());
+	UGameplayStatics::ApplyDamage(ActorToDamage, TickDamage, nullptr, this, UDamageType::StaticClass());
 }

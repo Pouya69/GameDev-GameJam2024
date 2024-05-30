@@ -16,6 +16,7 @@
 #include "KoalaBabyCharacter.h"
 #include "MissionObjectivesWidget.h"
 #include "BasicPlayerWidget.h"
+#include "Gun.h"
 #include "Kismet/GameplayStatics.h"
 #include "KoalaGameModeBase.h"
 
@@ -40,6 +41,14 @@ void AKoalaPlayerCharacter::BeginPlay()
 	{
 		Subsystem->AddMappingContext(InputMapping, 0);
 	}
+	if(GunClass)
+	{ 
+		UE_LOG(LogTemp, Warning, TEXT("Spawning %s"), *GunClass->GetName());
+		Gun = GetWorld()->SpawnActor<AGun>(GunClass);
+		Gun->AttachToComponent( GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("weapon_socket"));
+		Gun->SetOwner(this);
+	}
+
 	UE_LOG(LogTemp, Warning, TEXT("MESH: %S"), *GetMesh()->GetFullName());
 }
 
@@ -70,7 +79,7 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
-
+		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Shoot);
 	}
 
 }
@@ -239,6 +248,15 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	}
 	else if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
 		Super::ConsumeItem(Consumable);
+
+		// TODO This is temporary! Cannot operate on something that will affect this class from the parent.
+		if(Consumable->ItemType == EConsumableType::WATER)
+		{
+			if(Gun)
+			{
+				Gun->ReloadAmmunition();
+			}
+		}
 	}
 
 
@@ -310,4 +328,14 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	
 
 	Super::Jump();
+}
+
+
+void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
+{
+	if(Gun)
+	{
+		Gun->PullTrigger();
+	}
+	
 }
