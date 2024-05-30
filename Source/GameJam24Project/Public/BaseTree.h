@@ -28,6 +28,16 @@ public:
 
 	virtual void Interact() override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Fire")
+		bool bIsOnFire;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire")
+		int ExpandFireEverySeconds;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire")
+		int TreeFireDamage;
+
+
+	void StartFire();
+	FTimerHandle TreeFireTimer;
 	
 	
 };

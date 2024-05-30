@@ -13,6 +13,7 @@
 #include "UObject/ConstructorHelpers.h"
 #include "KoalaBaseCharacter.h"
 #include "Engine/DamageEvents.h"
+#include "BaseTree.h"
 
 
 // Sets default values
@@ -119,7 +120,6 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 {
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
-	
 	const bool bTimerExists = GetWorldTimerManager(). TimerExists(DamageTimer);
 	if(bIsAKoala)
 	{
@@ -129,6 +129,9 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 			ActorToDamage = OtherActor;
 			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
 		}
+	}
+	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
+		TreeObject->StartFire();
 	}
 }
 

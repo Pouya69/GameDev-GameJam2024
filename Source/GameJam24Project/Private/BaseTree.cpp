@@ -28,3 +28,17 @@ void ABaseTree::Interact()
 	UE_LOG(LogTemp, Warning, TEXT("Interacting tree..."));
 }
 
+void ABaseTree::StartFire()
+{
+	if (bIsOnFire) return;  // If already on fire ignore
+	bIsOnFire = true;
+	FTimerDelegate TreeFireDelegate;
+	TreeFireDelegate.BindLambda([&]() {
+		// TODO: Expand fire and create fire objects and etc.
+		// TODO: Also have an end condition when the tree is fully on fire
+	});
+
+	GetWorldTimerManager().SetTimer(TreeFireTimer, TreeFireDelegate, ExpandFireEverySeconds, true);
+
+}
+
