@@ -206,6 +206,11 @@ float AKoalaPlayerCharacter::GetTimeLeftProportional() const
 	return (float) GameMode->TimeLeftExtraction / GameMode->ExtractionTimeSinceStart;
 }
 
+int AKoalaPlayerCharacter::GetBabyKoalasLeft() const
+{
+	return GameMode->BabyKoalasAlive;
+}
+
 void AKoalaPlayerCharacter::MakeStartingWidgets()
 {
 	

@@ -72,13 +72,8 @@ public:
 	void DetachFromCurrentTree();
 
 public:
-	class AKoalaGameModeBase* GameMode;
-
-	UFUNCTION(BlueprintCallable)
-		float GetTimeLeftProportional() const;
-
-public:
 	// HUD and Widgets
+	class AKoalaGameModeBase* GameMode;
 	UFUNCTION(BlueprintCallable)
 		void MakeStartingWidgets();
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -90,7 +85,10 @@ public:
 		class UBasicPlayerWidget* BasicPlayerWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<class UBasicPlayerWidget> BasicPlayerWidgetClass;
-
+	UFUNCTION(BlueprintCallable)
+		float GetTimeLeftProportional() const;
+	UFUNCTION(BlueprintCallable)
+		int GetBabyKoalasLeft() const;
 
 
 private:

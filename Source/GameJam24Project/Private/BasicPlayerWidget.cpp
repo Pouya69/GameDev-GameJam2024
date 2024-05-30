@@ -8,25 +8,31 @@ void UBasicPlayerWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 	PlayerCharacter = Cast<AKoalaPlayerCharacter>(GetOwningPlayerPawn());
+	TotalBabyKoalas = PlayerCharacter->GetBabyKoalasLeft();
 }
 
 
 float UBasicPlayerWidget::GetHealth() const
 {
-	return PlayerCharacter->GetHealth() / 100;
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetHealth() / 100 : 0.f;
 }
 
 float UBasicPlayerWidget::GetStamina() const
 {
-	return PlayerCharacter->GetStamina() / 100;
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetStamina() / 100 : 0.f;
 }
 
 bool UBasicPlayerWidget::IsOnFire() const
 {
-	return PlayerCharacter->IsOnFire();
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->IsOnFire() : false;
 }
 
 float UBasicPlayerWidget::GetTimeLeft() const
 {
-	return PlayerCharacter->GetTimeLeftProportional();
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetTimeLeftProportional() : 0.f;
+}
+
+int UBasicPlayerWidget::GetBabyKoalasLeft() const
+{
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetBabyKoalasLeft() : 0;
 }

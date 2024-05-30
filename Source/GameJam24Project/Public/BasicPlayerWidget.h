@@ -17,6 +17,9 @@ class GAMEJAM24PROJECT_API UBasicPlayerWidget : public UUserWidget
 protected:
 	virtual void NativeConstruct() override;
 	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		int TotalBabyKoalas;
 private:
 	class AKoalaPlayerCharacter* PlayerCharacter;
 
@@ -28,4 +31,6 @@ private:
 		bool IsOnFire() const;
 	UFUNCTION(BlueprintCallable)
 		float GetTimeLeft() const;
+	UFUNCTION(BlueprintCallable)
+		int GetBabyKoalasLeft() const;
 };
