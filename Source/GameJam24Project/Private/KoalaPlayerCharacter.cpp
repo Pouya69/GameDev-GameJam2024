@@ -17,6 +17,8 @@
 #include "MissionObjectivesWidget.h"
 #include "BasicPlayerWidget.h"
 #include "Gun.h"
+#include "Kismet/GameplayStatics.h"
+#include "KoalaGameModeBase.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -31,6 +33,7 @@ AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 void AKoalaPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 	PlayerController = GetLocalViewingPlayerController();
 	MakeStartingWidgets();
 
@@ -204,8 +207,14 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 	CurrentClimbingTree = nullptr;
 }
 
+float AKoalaPlayerCharacter::GetTimeLeftProportional() const
+{
+	return (float) GameMode->TimeLeftExtraction / GameMode->ExtractionTimeSinceStart;
+}
+
 void AKoalaPlayerCharacter::MakeStartingWidgets()
 {
+	
 	if (ObjectivesWidgetClass) {
 		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
 		ObjectivesWidget->AddToViewport();

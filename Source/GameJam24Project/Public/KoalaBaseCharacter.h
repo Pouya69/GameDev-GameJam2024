@@ -31,11 +31,17 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void Die();
 
-	FOnDeath& OnDeath() { return DeathEvent; }
+	FOnDeath DeathEvent;
 
 	
 
 	UCapsuleComponent* CapsuleComp;
+
+
+	UPROPERTY(EditAnywhere, Category = "Death")
+		UMaterialInterface* DeathMaterial;
+	UPROPERTY(EditAnywhere, Category="Classes and stuff")
+		TSubclassOf<class AFire> FireClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")
 		float TreeDistanceCheck = 100;
 	bool AreThereAnyTreesAround(FHitResult& OutHitResult) const;
@@ -43,7 +49,6 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		bool IsOnFire() const;
-
 public:
 	// Stamina and Health
 	UFUNCTION(BlueprintCallable)
@@ -89,7 +94,7 @@ public:
 
 private:
 	/** Broadcasts whenever the layer changes */
-	FOnDeath DeathEvent;
+	
 
 	float Health = 100;
 	float Stamina = 100;

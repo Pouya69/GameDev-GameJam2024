@@ -12,7 +12,7 @@ void AKoalaGameModeBase::BeginPlay()
 {
 	TArray<AActor*> FindActors;
 	PlayerCharacter = Cast<AKoalaPlayerCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
-	PlayerCharacter->OnDeath().AddDynamic(this, &AKoalaGameModeBase::OnPlayerCharacterDeath);
+	PlayerCharacter->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnPlayerCharacterDeath);
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ObjectiveClass, FindActors);
 	for (AActor* Actor : FindActors) {
 		MissionObjectives.Add(Cast<AMissionObjective>(Actor));
@@ -21,7 +21,7 @@ void AKoalaGameModeBase::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BabyKoalaCharacterClass, FindActors);
 	for (AActor* Actor : FindActors) {
 		AKoalaBabyCharacter* BabyKoala = Cast<AKoalaBabyCharacter>(Actor);
-		BabyKoala->OnDeath().AddDynamic(this, &AKoalaGameModeBase::OnBabyKoalaDeath);
+		BabyKoala->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnBabyKoalaDeath);
 		BabyKoalasAlive++;
 	}
 	FindActors.Empty();
@@ -47,21 +47,34 @@ bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMi
 
 void AKoalaGameModeBase::OnPlayerCharacterDeath()
 {
-	FString Message = FString("You died...");
+	FString Message = FString("EVENT: You died...");
 	GameOver(false, Message);
 }
 
 void AKoalaGameModeBase::OnBabyKoalaDeath()
 {
 	BabyKoalasAlive--;
+	UE_LOG(LogTemp, Warning, TEXT("A baby koala has died. Left: %d"), BabyKoalasAlive);
 	if (BabyKoalasAlive < MinBabyKoalasAliveNeeded) {
 		FString Message = FString("You have failed to rescue the koalas...");
 		GameOver(false, Message);
 	}
 }
 
+void AKoalaGameModeBase::DisablePlayerInput()
+{
+	if (PlayerCharacter == nullptr) return;
+	
+	PlayerCharacter->DisableInput(PlayerCharacter->PlayerController);
+	PlayerCharacter->SetActorTickEnabled(false);
+	PlayerCharacter->PlayerController->UnPossess();
+	
+}
+
 void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message)
 {
+	DisablePlayerInput();
+	GetWorldTimerManager().ClearAllTimersForObject(this);
 	// TODO: Implement GameOver function
 	if (bWon) {
 		// Won the level
@@ -70,14 +83,17 @@ void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message)
 		// Lost the level
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *Message);
+	UE_LOG(LogTemp, Warning, TEXT("GAME OVER: %s"), *Message);
 }
 
 void AKoalaGameModeBase::EndGame()
 {
+	UE_LOG(LogTemp, Warning, TEXT("Ending game..."), TimeLeftExtraction);
+
 	bool bWon;
 	FString Message = FString("You failed to save the koalas..."); // By default
-	if (!PlayerCharacter->IsDead() && ExtractionArea->GetBabyKoalasNumInArea() >= MinBabyKoalasAliveNeeded) {
+	int KoalasSaved = ExtractionArea->GetBabyKoalasNumInArea();
+	if (!PlayerCharacter->IsDead() && KoalasSaved >= MinBabyKoalasAliveNeeded) {
 		bWon = true;
 		if (ExtractionArea->IsPlayerInArea()) {
 			// If player is also in area
@@ -87,6 +103,7 @@ void AKoalaGameModeBase::EndGame()
 			// If everything is good but player is not in area themselves
 			Message = FString("You saved the babies, but you sacrificed yourself in the way...");
 		}
+		Message.Append(FString("Koalas saved: ") + FString::FromInt(KoalasSaved));
 	}
 	PlayerCharacter->SetActorTickEnabled(false);
 	if (APlayerController* PlayerController = Cast<APlayerController>(PlayerCharacter->GetController())) {
@@ -102,6 +119,7 @@ void AKoalaGameModeBase::SetupTimerForEndGame()
 	FTimerDelegate TimerDelegateExtraction;
 	TimerDelegateExtraction.BindLambda([&]() {
 		TimeLeftExtraction--;
+		// UE_LOG(LogTemp, Warning, TEXT("Time Left: %d"), TimeLeftExtraction);
 		if (TimeLeftExtraction < 0) {
 			GetWorldTimerManager().ClearTimer(TimerHandleExtraction);
 			EndGame();

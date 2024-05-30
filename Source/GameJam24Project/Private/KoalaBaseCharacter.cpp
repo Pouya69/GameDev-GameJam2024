@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Consumable.h"
 #include "KoalaPlayerCharacter.h"
+#include "Fire.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -32,7 +33,7 @@ void AKoalaBaseCharacter::BeginPlay()
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bIsBeingCarried) return;  // Stamina will not reduce if it is being carried
+	if (bIsBeingCarried || bIsDead) return;  // Stamina will not reduce if it is being carried
 	if (Stamina <= 0) {
 		Sleep();
 		return;
@@ -71,13 +72,13 @@ bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeC
 bool AKoalaBaseCharacter::IsOnFire() const
 {
 	/*TODO: Implement it*/
-	// TArray<AActor*> OverlapActors;
-	// GetOverlappingActors(OverlapActors, AFire::StaticClass());
+	TArray<AActor*> OverlapActors;
+	GetOverlappingActors(OverlapActors, FireClass);
 
-	// return !OverlapActors.IsEmpty();
+	return !OverlapActors.IsEmpty();
 
 	// Delete line below
-	return false;
+	// return false;
 }
 
 bool AKoalaBaseCharacter::IsCharacterMoving() const
@@ -104,7 +105,8 @@ bool AKoalaBaseCharacter::IsCharacterMoving() const
 } */
 
 float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEvent,  AController* InstigatedBy, AActor* DamageCauser)
-{
+{	
+	if (bIsDead) return 0.f;
 	const bool bShouldTakeDamage =  GetWorld()->GetTimeSeconds()  - LastDamageTime > TimeBetweenDamage;
 	if(!bShouldTakeDamage)
 	{
@@ -112,8 +114,8 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 	}
 	LastDamageTime = GetWorld()->GetTimeSeconds();
 	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
-	Health -= Damage;
-	UE_LOG(LogTemp, Warning, TEXT("Damage taken. New Health %f"), Health);
+	Health -= ActualDamage;
+	UE_LOG(LogTemp, Warning, TEXT("Damage taken. New Health, %s: %f"), *GetName(), Health);
 	if (Health <= 0) {
 		Die();
 	}
@@ -124,14 +126,16 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 void AKoalaBaseCharacter::Die()
 {
 	// TODO: Death stuff
-	SetActorTickEnabled(false);
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
-		PlayerController->DisableInput(PlayerController);
-	}
 	// This line below alerts other listeners of the event that character has died
+	if (bIsDead) return;
 	CapsuleComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);  // WIll no longer be pawn
+	if (DeathMaterial != nullptr) {
+		GetMesh()->SetMaterial(0, DeathMaterial);
+	}
 	bIsDead = true;
+	SetActorTickEnabled(false);
 	DeathEvent.Broadcast();
+	
 	
 }
 
@@ -157,17 +161,20 @@ void AKoalaBaseCharacter::AddStamina(float Amount)
 
 void AKoalaBaseCharacter::Sleep()
 {
-	if (IsSleeping()) return;  // Don't do anything if already sleeping
+	if (IsSleeping() || IsDead()) return;  // Don't do anything if already sleeping or dead
 	GetWorldTimerManager().ClearTimer(SleepTimerHandle);  // Clear already existing timer just in case.
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindLambda([&]() {
-		// Wake up after sleeping for X seconds
-		if (GetController()->IsPlayerController()) {
-			EnableInput(Cast<APlayerController>(GetController()));
+		if (!bIsDead) {
+			// Wake up after sleeping for X seconds
+			if (GetController()->IsPlayerController()) {
+				EnableInput(Cast<APlayerController>(GetController()));
+			}
+			bIsSleeping = false;
+			Stamina = StaminaAfterSleep;
+			// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 		}
-		bIsSleeping = false;
-		Stamina = StaminaAfterSleep;
-		UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
+		
 	});
 	if (GetController()->IsPlayerController()) {
 		DisableInput(Cast<APlayerController>(GetController()));
@@ -176,6 +183,6 @@ void AKoalaBaseCharacter::Sleep()
 		PlayerCharacter->DetachFromCurrentTree();
 	}
 	bIsSleeping = true;
-	UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
+	// UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
 }

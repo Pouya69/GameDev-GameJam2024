@@ -75,6 +75,11 @@ public:
 	class ABaseTree* CurrentClimbingTree;
 	void DetachFromCurrentTree();
 
+public:
+	class AKoalaGameModeBase* GameMode;
+
+	UFUNCTION(BlueprintCallable)
+		float GetTimeLeftProportional() const;
 
 public:
 	// HUD and Widgets
