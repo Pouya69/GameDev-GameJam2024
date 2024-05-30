@@ -38,8 +38,8 @@ public:
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float NiagaraParticleZOffset = -30.f;
 
-	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	class UNiagaraSystem* NiagaraTemplate;
+	UPROPERTY(EditAnywhere, Category="Fire Properties");
+	TSubclassOf<AFire>  FireClass;
 
 	UPROPERTY(EditAnywhere)
 	class UBoxComponent* BoxComponent;

@@ -82,7 +82,6 @@ void AFire::SpreadFire()
 	{
 		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_WorldStatic, Params);
 		bool bShouldSpawn = true;
-		// DrawDebugLine(GetWorld(), Start, End, FColor::Red, true, 2.f);
 		if(bLineTraceHasHit)
 		{
 			for (FHitResult HitResult : OutHitResults) {
@@ -100,7 +99,6 @@ void AFire::SpreadFire()
 
 	for( auto Vector : HitVector)
 	{
-		UE_LOG(LogTemp, Warning, TEXT(""));
 		SpreadDirections.Remove(Vector);
 	}
 
@@ -112,13 +110,7 @@ void AFire::SpawnFire(FVector Location)
 {
 	if(FMath::RandRange(0,100) <= SpawnProbability)
 	{
-		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(AFire::StaticClass(), Location, GetActorRotation());
-		if(SpawnedFire)
-		{
-			SpawnedFire->Damage = this->Damage;
-			SpawnedFire->Niagara = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraTemplate, Location + FVector(0, 0, NiagaraParticleZOffset), FRotator::ZeroRotator, FVector(NiagaraParticleScale));
-			SpawnedFire->NiagaraTemplate = NiagaraTemplate;
-		}
+		AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(FireClass, Location, GetActorRotation());
 	}
 }
 
@@ -135,7 +127,6 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 		if(!bTimerExists)
 		{
 			ActorToDamage = OtherActor;
-			// UGameplayStatics::ApplyDamage(OtherActor, Damage, nullptr, this, UDamageType::StaticClass());
 			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
 		}
 	}
