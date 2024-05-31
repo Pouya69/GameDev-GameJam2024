@@ -1,24 +1,24 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "BTTask_FleeFromFire.h"
+#include "BTTask_BabyDefaultBehaviour.h"
 #include "NavigationSystem.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
-#include "KoalaBabyCharacter.h"
 #include "Navigation/PathFollowingComponent.h"
+#include "KoalaBabyCharacter.h"
 
-UBTTask_FleeFromFire::UBTTask_FleeFromFire()
+
+UBTTask_BabyDefaultBehaviour::UBTTask_BabyDefaultBehaviour()
 {
-	NodeName = TEXT("Flee from fire");
+	NodeName = TEXT("Baby default behaviour");
 }
 
-EBTNodeResult::Type UBTTask_FleeFromFire::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+EBTNodeResult::Type UBTTask_BabyDefaultBehaviour::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
 {
 	Super::ExecuteTask(OwnerComp, NodeMemory);
 	AAIController* OwnerAIController = OwnerComp.GetAIOwner();
 	AKoalaBabyCharacter* OwnerPawn = Cast<AKoalaBabyCharacter>(OwnerAIController->GetPawn());
-
 	UBlackboardComponent* BlackBoardComp = OwnerComp.GetBlackboardComponent();
 	// TODO: Set the speed and stuff for the koala when on fire
 

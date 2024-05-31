@@ -90,10 +90,10 @@ void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemToCarry)) {
+		BabyCharacter->bIsBeingCarried = true;
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		BabyCharacter->GetCharacterMovement()->StopMovementImmediately();
-		BabyCharacter->bIsBeingCarried = true;
 		BabyCharacter->GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Flying;
 		
 
@@ -341,6 +341,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
 {
+	if (bIsOnTree) return;
 	if(Gun)
 	{
 		Gun->PullTrigger();

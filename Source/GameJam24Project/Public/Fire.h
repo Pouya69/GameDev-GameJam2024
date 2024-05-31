@@ -47,10 +47,13 @@ public:
 	TSubclassOf<AFire>  FireClass;
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
-	TSubclassOf<class AKoalaBabyCharacter>  BabyClass;
+	TSubclassOf<class ABaseTree>  TreeClass;
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
 	float FireCreationRadius = 100.f;
+
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	float FireCreationUpwardsCheck = 50.f;
 
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* SceneRootComp;
@@ -60,7 +63,7 @@ public:
 
 	void SpreadFire();
 
-	bool GetRandomLocation(FVector& OutLocation) const;
+	bool GetRandomLocation(FVector& OutLocation);
 
 	void ApplyDamageTimer();
 
@@ -81,7 +84,7 @@ public:
 
 private:
 	void MakeFire(FVector Location);
-
+	bool bIsCheckingOnTree = false;
 	FVector LocationToSpawnFrom;
 	FTimerHandle SpreadTimer;
 	FTimerHandle DamageTimer;

@@ -16,7 +16,6 @@
 #include "BaseTree.h"
 #include "NavigationSystem.h"
 #include "KoalaGameModeBase.h"
-#include "KoalaBabyCharacter.h"
 
 
 // Sets default values
@@ -45,6 +44,7 @@ void AFire::BeginPlay()
 
 	OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 	OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
+	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 }
 
 // Called every frame
@@ -56,20 +56,82 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	FVector SpawnLocation = LocationToSpawnFrom;
-	if (GetRandomLocation(SpawnLocation)) {
-		SpawnFire(SpawnLocation);
+	UpdateBoxCollisions();
+	if (GetRandomLocation(LocationToSpawnFrom)) {
+		SpawnFire(LocationToSpawnFrom);
+		
 	}
 	SpawnProbability += IncrementProbabilityRate;
 	
 }
 
-bool AFire::GetRandomLocation(FVector& OutLocation) const
+bool AFire::GetRandomLocation(FVector& OutLocation)
 {
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	FHitResult HitResult;
+	const FVector SpawnLocFireExists = OutLocation + (FVector::UpVector * FireCreationUpwardsCheck);
+	const bool bFoundLocationUpFireExists = GetWorld()->SweepSingleByChannel(HitResult, SpawnLocFireExists, SpawnLocFireExists + (FVector::UpVector * FireCreationUpwardsCheck / 3), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
+	if (bFoundLocationUpFireExists) {
+		if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
+			bIsCheckingOnTree = false;
+			OutLocation = GetActorLocation();
+			return false;
+		}
+	}
+	const float RandomUpwards = FMath::RandRange(FireCreationUpwardsCheck / 3, FireCreationUpwardsCheck);
+	const FVector SpawnLoc = OutLocation + (FVector::UpVector * RandomUpwards);
+	const bool bFoundLocationUp = GetWorld()->SweepSingleByChannel(HitResult, SpawnLoc, SpawnLoc + (FVector::UpVector * RandomUpwards/3), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
+
+	if (bFoundLocationUp) {
+		if (HitResult.GetActor()->IsA(TreeClass)) {
+			bIsCheckingOnTree = true;
+			UE_LOG(LogTemp, Warning, TEXT("UP"));
+			OutLocation = HitResult.ImpactPoint;
+			return true;
+		}
+		if (bIsCheckingOnTree) {
+			bIsCheckingOnTree = false;
+			OutLocation = GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("Reset"));
+		}
+	}
+	else {
+		if (bIsCheckingOnTree) {
+			bIsCheckingOnTree = false;
+			OutLocation = GetActorLocation();
+			UE_LOG(LogTemp, Warning, TEXT("Reset"));
+		}
+	}
+	/*
+	bool bIsOnTree = false;
+	for (const AActor* Actor : OverlapActors) {
+		if (Actor->IsA(TreeClass)) {
+			bIsOnTree = true;
+			break;
+		}
+	}
+	if (bIsOnTree) {
+		
+		// OutLocation = GetActorLocation();
+	}
+	*/
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation MoveLocationNav;
-	bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(OutLocation, FireCreationRadius, MoveLocationNav);
+	bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(LocationToSpawnFrom, FireCreationRadius, MoveLocationNav);
 	if (!bFoundLocation) {
+		/*if (bIsOnTree) {
+			const FVector SpawnLoc2 = LocationToSpawnFrom + (FVector::RightVector * FireCreationUpwardsCheck);
+			const bool bFoundLocationRight = GetWorld()->SweepMultiByChannel(HitResults, SpawnLoc2, SpawnLoc2 + (FVector::RightVector * FireCreationUpwardsCheck / 2), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
+			if (bFoundLocationRight) {
+				for (const FHitResult HitResult : HitResults) {
+					OutLocations.Add(HitResult.ImpactPoint);
+				}
+				return true;
+			}
+			return false;
+		}*/
+		
 		bFoundLocation = NavSystem->GetRandomReachablePointInRadius(GetActorLocation(), FireCreationRadius, MoveLocationNav);
 		if (!bFoundLocation) return false;
 	}
@@ -110,13 +172,18 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
-	const bool bTimerExists = GetWorldTimerManager(). TimerExists(DamageTimer);
+	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass())) {
+		OverlapActors.Add(OtherActor);
+	}
+	else {
+		return;
+	}
+	const bool bTimerExists = GetWorldTimerManager().TimerExists(DamageTimer);
 	if(AKoalaBaseCharacter* KoalaBaseCharacter = Cast<AKoalaBaseCharacter>(OtherActor))
 	{
-		OverlapActors.Add(KoalaBaseCharacter);
 		if(!bTimerExists)
 		{
-			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
+			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 		}
 	}
 	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
@@ -131,7 +198,7 @@ void AFire::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
 	if(bIsAKoala)
 	{
 		OverlapActors.Remove(OtherActor);
-		GetWorldTimerManager().ClearTimer(DamageTimer);
+		// GetWorldTimerManager().ClearTimer(DamageTimer);
 	}
 }
 
@@ -164,18 +231,41 @@ void AFire::MakeFire(FVector Location)
 	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
 	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
 	NewNiagara->SetHiddenInGame(false, true);
+
+	UpdateBoxCollisions();
 }
 
 void AFire::ApplyDamageTimer()
 {
 	UpdateBoxCollisions();
+	const int Num = OverlapActors.Num();
 	if (OverlapActors.IsEmpty())
 	{
+		GetWorldTimerManager().ClearTimer(DamageTimer);
+		return;
+	}
+	AKoalaBaseCharacter* KoalaBasePlayer = Cast<AKoalaBaseCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	if (!KoalaBasePlayer) {
 		GetWorldTimerManager().ClearAllTimersForObject(this);
 		return;
 	}
-	for (AActor* Actor : OverlapActors) {
-		UGameplayStatics::ApplyDamage(Actor, TickDamage, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UDamageType::StaticClass());
+	if (KoalaBasePlayer->IsDead()) {
+		GetWorldTimerManager().ClearAllTimersForObject(this);
+		return;
+	}
+	if (OverlapActors.IsEmpty())
+	{
+		GetWorldTimerManager().ClearTimer(DamageTimer);
+		return;
+	}
+	for (int i = 0; i < Num; i++) {
+		if (!OverlapActors.IsValidIndex(i) || !OverlapActors[i]) {
+			OverlapActors.Empty();
+			GetWorldTimerManager().ClearTimer(DamageTimer);
+			return;
+		}
+		// UE_LOG(LogTemp, Warning, TEXT("%s"), *Actor->GetName());
+		UGameplayStatics::ApplyDamage(OverlapActors[i], TickDamage, KoalaBasePlayer->GetController(), KoalaBasePlayer, UDamageType::StaticClass());
 	}
 	
 }

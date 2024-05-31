@@ -87,6 +87,8 @@ public:
 		bool IsSleeping() const { return bIsSleeping; }
 	UFUNCTION(BlueprintCallable)
 		bool IsDead() const { return bIsDead; }
+	UFUNCTION(BlueprintCallable)
+		void StopCharacterMovement();
 	
 	FTimerHandle SleepTimerHandle;
 

@@ -27,6 +27,7 @@ void AKoalaBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	//OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
+	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
 	
 	
 }
@@ -108,7 +109,7 @@ bool AKoalaBaseCharacter::IsCharacterMoving() const
 
 float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEvent,  AController* InstigatedBy, AActor* DamageCauser)
 {	
-	UE_LOG(LogTemp, Warning, TEXT("Taking Damage: %s"), *GetName());
+	// UE_LOG(LogTemp, Warning, TEXT("Taking Damage: %s"), *GetName());
 	if (bIsDead) return 0.f;
 	const bool bShouldTakeDamage =  GetWorld()->GetTimeSeconds()  - LastDamageTime > TimeBetweenDamage;
 	if(!bShouldTakeDamage)
@@ -188,4 +189,9 @@ void AKoalaBaseCharacter::Sleep()
 	bIsSleeping = true;
 	// UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
+}
+
+void AKoalaBaseCharacter::StopCharacterMovement()
+{
+	GetCharacterMovement()->StopMovementImmediately();
 }
