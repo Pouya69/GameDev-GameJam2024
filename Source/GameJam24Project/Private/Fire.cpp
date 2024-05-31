@@ -80,13 +80,13 @@ void AFire::SpreadFire()
 
 	for(auto End : SpreadDirections )
 	{
-		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_WorldStatic, Params);
+		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
 		bool bShouldSpawn = true;
 		if(bLineTraceHasHit)
 		{
 			for (FHitResult HitResult : OutHitResults) {
 				
-				if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
+				if (HitResult.GetActor()->IsA(FireClass)) {
 					HitVector.Add(End);
 					bShouldSpawn = false;
 					break;

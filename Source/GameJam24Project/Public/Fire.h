@@ -27,16 +27,10 @@ public:
 	float TickDamage = 10.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	float SpreadTime = 3.f;
+	float SpreadTime = FMath::RandRange(3,10);
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float CollisionBoxExtent = 50.f;
-
-	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	FVector NiagaraParticleScale = FVector(7.f,7.f,4.f);
-
-	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	float NiagaraParticleZOffset = -30.f;
 
 	UPROPERTY(EditAnywhere, Category="Custom|Classes")
 	TSubclassOf<class AFire>  FireClass;
