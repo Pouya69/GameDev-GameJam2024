@@ -116,7 +116,6 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 		OverlapActors.Add(KoalaBaseCharacter);
 		if(!bTimerExists)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("DAMAGING: %s"), *OtherActor->GetName());
 			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
 		}
 	}
@@ -156,8 +155,9 @@ void AFire::MakeFire(FVector Location)
 	BoxLoc.Z += NewBoxComp->GetScaledBoxExtent().Z / 2 + 5;
 	NewBoxComp->SetWorldLocation(BoxLoc);
 	NewBoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel2);
+	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 	NewBoxComp->SetHiddenInGame(false, true);
 	NewBoxComp->bMultiBodyOverlap = true;
 
@@ -175,7 +175,7 @@ void AFire::ApplyDamageTimer()
 		return;
 	}
 	for (AActor* Actor : OverlapActors) {
-		UGameplayStatics::ApplyDamage(Actor, TickDamage, nullptr, this, UDamageType::StaticClass());
+		UGameplayStatics::ApplyDamage(Actor, TickDamage, UGameplayStatics::GetPlayerController(GetWorld(), 0), this, UDamageType::StaticClass());
 	}
 	
 }
