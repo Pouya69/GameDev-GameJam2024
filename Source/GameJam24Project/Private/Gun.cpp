@@ -8,6 +8,7 @@
 #include "Engine/DamageEvents.h"
 #include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
+#include "Fire.h"
 
 // Sets default values
 AGun::AGun()
@@ -63,11 +64,16 @@ void AGun::PullTrigger()
 		//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, HitResult.Location, ShotDirection.Rotation());
 		//UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ImpactSound, HitResult.Location);		
 		AActor* ResultActor = HitResult.GetActor();
-
+		// DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 5, 10, FColor::Blue, true);
 		if(ResultActor != nullptr)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Hitting %s"),*ResultActor->GetName());
-			UGameplayStatics::ApplyDamage(ResultActor, Damage, nullptr, this, UDamageType::StaticClass());
+			// UE_LOG(LogTemp, Warning, TEXT("Hitting %s"), *HitResult.GetComponent()->GetName());
+			
+			// UGameplayStatics::ApplyDamage(ResultActor, Damage, nullptr, this, UDamageType::StaticClass());
+			if (AFire* FireObjectHit = Cast<AFire>(ResultActor)) {
+				FireObjectHit->DestroyFire(HitResult.GetComponent());
+			}
+			
 		}
 	}
 }
@@ -89,7 +95,7 @@ bool AGun::GunTrace(FHitResult& Hit)
 
 	FVector End = PlayerLocation + PlayerRotation.Vector() * FireRange;
 
-	return GetWorld()->LineTraceSingleByChannel(Hit, PlayerLocation, End , ECollisionChannel::ECC_GameTraceChannel1, params);
+	return GetWorld()->LineTraceSingleByChannel(Hit, PlayerLocation, End , ECollisionChannel::ECC_WorldStatic, params);
 	
 }
 

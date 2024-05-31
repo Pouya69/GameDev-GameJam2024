@@ -51,6 +51,24 @@ public:
 	void SetupTimerForEndGame();
 	FTimerHandle TimerHandleExtraction;
 
+public:
+
+	// Fire creation
+	FTimerHandle TimerHandleFireRandom;
+	int FireActorsInLevel;
+	TArray<class AKoalaBabyCharacter*> BabyCharacters;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
+		int CreateFireEverySeconds = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
+		int MaxFiresAllowed = 30;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
+		float MinBabyRadiusSpawnFire = 1000;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
+		float MaxBabyRadiusSpawnFire = 5000;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
+		TSubclassOf<class AFire> FireClass;
+	void CreateFireRandom();
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

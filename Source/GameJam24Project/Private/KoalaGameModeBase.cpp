@@ -7,6 +7,8 @@
 #include "KoalaPlayerCharacter.h"
 #include "KoalaBabyCharacter.h"
 #include "ExtractionArea.h"
+#include "Fire.h"
+#include "NavigationSystem.h"
 
 void AKoalaGameModeBase::BeginPlay()
 {
@@ -21,13 +23,47 @@ void AKoalaGameModeBase::BeginPlay()
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BabyKoalaCharacterClass, FindActors);
 	for (AActor* Actor : FindActors) {
 		AKoalaBabyCharacter* BabyKoala = Cast<AKoalaBabyCharacter>(Actor);
+		BabyCharacters.Add(BabyKoala);
 		BabyKoala->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnBabyKoalaDeath);
 		BabyKoalasAlive++;
 	}
 	FindActors.Empty();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), FireClass, FindActors);
+	if (!FindActors.IsEmpty()) {
+		FireActorsInLevel = FindActors.Num();
+	}
+	FindActors.Empty();
 	ExtractionArea = Cast<AExtractionArea>(UGameplayStatics::GetActorOfClass(GetWorld(), ExtractionAreaClass));
-
 	SetupTimerForEndGame();
+	// Creating random fire actors
+	FTimerDelegate FireDelegate;
+	FireDelegate.BindLambda([&]() {
+		if (FireActorsInLevel <= MaxFiresAllowed) CreateFireRandom();
+	});
+	GetWorldTimerManager().SetTimer(TimerHandleFireRandom, FireDelegate, CreateFireEverySeconds, true);
+
+}
+
+
+void AKoalaGameModeBase::CreateFireRandom()
+{
+	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation MoveLocationNav;
+	const float RadiusRandom = FMath::RandRange(MinBabyRadiusSpawnFire, MaxBabyRadiusSpawnFire);
+	AKoalaBabyCharacter* BabyCharacter = BabyCharacters[FMath::RandRange(0, BabyCharacters.Num() - 1)];
+	// UE_LOG(LogTemp, Warning, TEXT("Random Baby: %s"), *BabyCharacter->GetName());
+	const bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(BabyCharacter->GetActorLocation(), RadiusRandom, MoveLocationNav);
+	if (!bFoundLocation) return;
+	AFire* FireObjectSpawned = GetWorld()->SpawnActor<AFire>(FireClass, MoveLocationNav.Location, FRotator::ZeroRotator);
+	TArray<AActor*> OutActors;
+	FireObjectSpawned->GetOverlappingActors(OutActors, FireClass);
+	if (!OutActors.IsEmpty()) {
+		FireObjectSpawned->Destroy();
+		return;
+	}
+
+
+
 }
 
 

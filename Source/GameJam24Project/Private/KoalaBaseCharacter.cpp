@@ -15,8 +15,10 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	// PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = true;
 	CapsuleComp = Cast<UCapsuleComponent>(GetRootComponent());
-
+	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Overlap);
+	
 	
 }
 
@@ -73,7 +75,7 @@ bool AKoalaBaseCharacter::IsOnFire() const
 {
 	/*TODO: Implement it*/
 	TArray<AActor*> OverlapActors;
-	GetOverlappingActors(OverlapActors, FireClass);
+	CapsuleComp->GetOverlappingActors(OverlapActors, FireClass);
 
 	return !OverlapActors.IsEmpty();
 
@@ -106,6 +108,7 @@ bool AKoalaBaseCharacter::IsCharacterMoving() const
 
 float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEvent,  AController* InstigatedBy, AActor* DamageCauser)
 {	
+	UE_LOG(LogTemp, Warning, TEXT("Taking Damage: %s"), *GetName());
 	if (bIsDead) return 0.f;
 	const bool bShouldTakeDamage =  GetWorld()->GetTimeSeconds()  - LastDamageTime > TimeBetweenDamage;
 	if(!bShouldTakeDamage)
@@ -113,14 +116,14 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 		return 0;
 	}
 	LastDamageTime = GetWorld()->GetTimeSeconds();
-	float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
-	Health -= ActualDamage;
-	UE_LOG(LogTemp, Warning, TEXT("Damage taken. New Health, %s: %f"), *GetName(), Health);
+	// float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
+	Health -= Damage;
+	UE_LOG(LogTemp, Warning, TEXT("New Health, %s: %f"), *GetName(), Health);
 	if (Health <= 0) {
 		Die();
 	}
 
-	return ActualDamage;
+	return Damage;
 }
 
 void AKoalaBaseCharacter::Die()

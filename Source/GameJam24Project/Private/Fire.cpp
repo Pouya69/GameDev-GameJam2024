@@ -14,6 +14,9 @@
 #include "KoalaBaseCharacter.h"
 #include "Engine/DamageEvents.h"
 #include "BaseTree.h"
+#include "NavigationSystem.h"
+#include "KoalaGameModeBase.h"
+#include "KoalaBabyCharacter.h"
 
 
 // Sets default values
@@ -22,19 +25,8 @@ AFire::AFire()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 	
-	BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxComponent"));
-	SetRootComponent(BoxComponent);
-	BoxComponent->InitBoxExtent(FVector(CollisionBoxExtent));
-
-	BoxComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	BoxComponent->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
-	BoxComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-
-	BoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
-	BoxComponent->OnComponentEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
-
-	Niagara = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraComponent"));
-	Niagara->SetupAttachment(BoxComponent);
+	SceneRootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Scene Root Comp"));
+	SetRootComponent(SceneRootComp);
 
 }
 
@@ -43,19 +35,16 @@ void AFire::BeginPlay()
 {
 	Super::BeginPlay();
 
-	FVector Start = GetActorLocation();
+	LocationToSpawnFrom = GetActorLocation();
 
 	// TODO Check where the safezone is so fire spread in that direction
-	SpreadDirections = TArray<FVector>{
-		Start +  FVector(0,  2 * CollisionBoxExtent, 0),
-		Start +  FVector(2 * CollisionBoxExtent,  2 * CollisionBoxExtent, 0),
-		Start +  FVector(2 * CollisionBoxExtent,  -2 * CollisionBoxExtent, 0),
-		Start +  FVector(0,  -2 * CollisionBoxExtent, 0),
-		Start +  FVector(2 * CollisionBoxExtent,  0, 0)
-	};
+
+	MakeFire(GetActorLocation());
 
 	GetWorldTimerManager().SetTimer(SpreadTimer, this, &AFire::SpreadFire, SpreadTime, true);
-	
+
+	OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
+	OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 }
 
 // Called every frame
@@ -67,71 +56,67 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	if(!Niagara || SpreadDirections.IsEmpty())
-	{
-		GetWorldTimerManager().ClearAllTimersForObject(this);
-		return;	
-	} 
-
-	FVector Start = GetActorLocation();
-	TArray<FHitResult> OutHitResults;
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-	TArray<FVector> HitVector;
-
-	for(auto End : SpreadDirections )
-	{
-		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_WorldStatic, Params);
-		bool bShouldSpawn = true;
-		if(bLineTraceHasHit)
-		{
-			for (FHitResult HitResult : OutHitResults) {
-				
-				if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
-					HitVector.Add(End);
-					bShouldSpawn = false;
-					break;
-				}
-			}
-		}
-		if (bShouldSpawn) {
-			SpawnFire(End, HitVector);
-		}
+	FVector SpawnLocation = LocationToSpawnFrom;
+	if (GetRandomLocation(SpawnLocation)) {
+		SpawnFire(SpawnLocation);
 	}
-
-	for( auto Vector : HitVector)
-	{
-		SpreadDirections.Remove(Vector);
-	}
-
 	SpawnProbability += IncrementProbabilityRate;
 	
 }
 
-void AFire::SpawnFire(FVector Location, TArray<FVector>& HitVector)
+bool AFire::GetRandomLocation(FVector& OutLocation) const
 {
+	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
+	FNavLocation MoveLocationNav;
+	bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(OutLocation, FireCreationRadius, MoveLocationNav);
+	if (!bFoundLocation) {
+		bFoundLocation = NavSystem->GetRandomReachablePointInRadius(GetActorLocation(), FireCreationRadius, MoveLocationNav);
+		if (!bFoundLocation) return false;
+	}
+	OutLocation = MoveLocationNav.Location;
+	return true;
+}
+
+void AFire::SpawnFire(FVector Location)
+{
+
 	if(FMath::RandRange(0,100) <= SpawnProbability)
 	{
+		MakeFire(Location);
+		LocationToSpawnFrom = Location;
+	}
+}
 
-		if (AFire* SpawnedFire = GetWorld()->SpawnActor<AFire>(FireClass, Location, GetActorRotation()))
-		{
-			HitVector.Add(Location);
-		}
+void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
+{
+	TArray<USceneComponent*> ChildrenComps;
+	ComponentHit->GetChildrenComponents(true, ChildrenComps);
+	if (!ChildrenComps.IsEmpty()) {
+		for (USceneComponent* Comp : ChildrenComps) Comp->DestroyComponent();
+	}
+	ComponentHit->DestroyComponent(false);
+	TArray<UBoxComponent*> Comps;
+	GetComponents(UBoxComponent::StaticClass(), Comps, true);
+	if (Comps.IsEmpty()) {
+		AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
+		GameMode->FireActorsInLevel--;
+		UE_LOG(LogTemp, Warning, TEXT("Destroying FIRE"));
+		this->Destroy();
 	}
 }
 
 
-void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherActor,  UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult)
+void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
-	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
+	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
 	const bool bTimerExists = GetWorldTimerManager(). TimerExists(DamageTimer);
-	if(bIsAKoala)
+	if(AKoalaBaseCharacter* KoalaBaseCharacter = Cast<AKoalaBaseCharacter>(OtherActor))
 	{
-		bIsOverlapping = true;
+		OverlapActors.Add(KoalaBaseCharacter);
 		if(!bTimerExists)
 		{
-			ActorToDamage = OtherActor;
+			UE_LOG(LogTemp, Warning, TEXT("DAMAGING: %s"), *OtherActor->GetName());
 			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f); 
 		}
 	}
@@ -140,12 +125,14 @@ void AFire::OnOverlapBegin( UPrimitiveComponent* OverlappedComp,  AActor* OtherA
 	}
 }
 
-void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+void AFire::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
 {
+
 	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
 	if(bIsAKoala)
 	{
-		bIsOverlapping = false;	
+		OverlapActors.Remove(OtherActor);
+		GetWorldTimerManager().ClearTimer(DamageTimer);
 	}
 }
 
@@ -155,12 +142,40 @@ float AFire::TakeDamage(float Damage, FDamageEvent const &DamageEvent, AControll
     return 0.0f;
 }
 
+void AFire::UpdateBoxCollisions()
+{
+	UpdateOverlaps(true);
+}
+
+void AFire::MakeFire(FVector Location)
+{
+	UBoxComponent* NewBoxComp = Cast<UBoxComponent>(AddComponentByClass(UBoxComponent::StaticClass(), true, GetTransform(), false));
+	NewBoxComp->AttachToComponent(SceneRootComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	NewBoxComp->InitBoxExtent(FVector(CollisionBoxExtent));
+	FVector BoxLoc = Location;
+	BoxLoc.Z += NewBoxComp->GetScaledBoxExtent().Z / 2 + 5;
+	NewBoxComp->SetWorldLocation(BoxLoc);
+	NewBoxComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_GameTraceChannel2);
+	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	NewBoxComp->SetHiddenInGame(false, true);
+	NewBoxComp->bMultiBodyOverlap = true;
+
+	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
+	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
+	NewNiagara->SetHiddenInGame(false, true);
+}
+
 void AFire::ApplyDamageTimer()
 {
-	if(!bIsOverlapping)
+	UpdateBoxCollisions();
+	if (OverlapActors.IsEmpty())
 	{
-		GetWorldTimerManager().ClearTimer(DamageTimer);
+		GetWorldTimerManager().ClearAllTimersForObject(this);
 		return;
 	}
-	UGameplayStatics::ApplyDamage(ActorToDamage, TickDamage, nullptr, this, UDamageType::StaticClass());
+	for (AActor* Actor : OverlapActors) {
+		UGameplayStatics::ApplyDamage(Actor, TickDamage, nullptr, this, UDamageType::StaticClass());
+	}
+	
 }

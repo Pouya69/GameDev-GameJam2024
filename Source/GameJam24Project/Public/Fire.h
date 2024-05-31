@@ -23,6 +23,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+
+
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float TickDamage = 10.f;
 
@@ -35,45 +37,59 @@ public:
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	FVector NiagaraParticleScale = FVector(7.f,7.f,4.f);
 
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	FRotator NiagaraParticleRotation;
+
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float NiagaraParticleZOffset = -30.f;
 
-	UPROPERTY(EditAnywhere, Category="Fire Properties");
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	TSubclassOf<AFire>  FireClass;
 
-	UPROPERTY(EditAnywhere)
-	class UBoxComponent* BoxComponent;
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	TSubclassOf<class AKoalaBabyCharacter>  BabyClass;
+
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	float FireCreationRadius = 100.f;
 
 	UPROPERTY(EditAnywhere)
-	class UNiagaraComponent* Niagara;
+	class USceneComponent* SceneRootComp;
 
-	
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* NiagaraSystemManual;
 
 	void SpreadFire();
 
+	bool GetRandomLocation(FVector& OutLocation) const;
+
 	void ApplyDamageTimer();
 
-	void SpawnFire(FVector Location, TArray<FVector>& HitVector);
+	void SpawnFire(FVector Location);
+
+	void DestroyFire(UPrimitiveComponent* ComponentHit);
 
 	UFUNCTION()
-	void OnOverlapBegin(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& HitResult);
+	void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
 
 	UFUNCTION()
-	void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	void OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor);
 
 	UFUNCTION()
 	virtual float TakeDamage(float Damage, struct FDamageEvent const &DamageEvent,  class AController* InstigatedBy, AActor* DamageCauser) override;
 
-private:
+	void UpdateBoxCollisions();
 
+private:
+	void MakeFire(FVector Location);
+
+	FVector LocationToSpawnFrom;
 	FTimerHandle SpreadTimer;
 	FTimerHandle DamageTimer;
-	AActor* ActorToDamage;
-	TArray<FVector> SpreadDirections;
-	bool bIsOverlapping = false;
+	FTimerHandle CollisionUpdateTimer;
+	TArray<AActor*> OverlapActors;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	float SpawnProbability = 5.f;
+	float SpawnProbability = 20.f;
 	
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float IncrementProbabilityRate = 5.f;

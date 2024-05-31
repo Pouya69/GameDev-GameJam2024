@@ -29,7 +29,7 @@ public:
 	// Death
 	// Delegate signature
 	UFUNCTION(BlueprintCallable)
-		void Die();
+		virtual void Die();
 
 	FOnDeath DeathEvent;
 
