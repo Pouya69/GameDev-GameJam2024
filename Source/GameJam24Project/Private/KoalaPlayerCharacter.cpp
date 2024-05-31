@@ -137,6 +137,14 @@ void AKoalaPlayerCharacter::DropCurrentCarriedItem()
 	ItemCarriedOnBack = nullptr;
 }
 
+void AKoalaPlayerCharacter::ReloadGun()
+{
+	if (Gun)
+	{
+		Gun->ReloadAmmunition();
+	}
+}
+
 void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 {
 	if (Super::IsSleeping()) return;  // Character cannot move but can look around when asleep
@@ -258,13 +266,6 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 		Super::ConsumeItem(Consumable);
 
 		// TODO This is temporary! Cannot operate on something that will affect this class from the parent.
-		if(Consumable->ItemType == EConsumableType::WATER)
-		{
-			if(Gun)
-			{
-				Gun->ReloadAmmunition();
-			}
-		}
 	}
 
 

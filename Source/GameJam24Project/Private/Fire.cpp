@@ -16,6 +16,7 @@
 #include "BaseTree.h"
 #include "NavigationSystem.h"
 #include "KoalaGameModeBase.h"
+#include "Consumable.h"
 
 
 // Sets default values
@@ -172,7 +173,7 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
-	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass())) {
+	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass()) || OtherActor->IsA(AConsumable::StaticClass())) {
 		OverlapActors.Add(OtherActor);
 	}
 	else {

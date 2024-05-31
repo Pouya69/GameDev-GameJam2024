@@ -3,11 +3,20 @@
 
 #include "Consumable.h"
 #include "KoalaBaseCharacter.h"
+#include "KoalaPlayerCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 AConsumable::AConsumable()
 {
 	BaseMeshComp->SetSimulatePhysics(true);
 	BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+}
+
+void AConsumable::BeginPlay()
+{
+	Super::BeginPlay();
+
+	OnTakeAnyDamage.AddDynamic(this, &AConsumable::DestroyItemHandleFire);
 }
 
 void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
@@ -26,17 +35,37 @@ void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 		Consumer->AddHealth(AdditionToConsumer);
 	}
 	else if (ItemType == EConsumableType::WATER) {
-		// TODO: Water getting added
-		// Something like the line below
-		// Consumer->Weapon->AddWater(AdditionToConsumer);
+		if (AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(Consumer)) {
+			PlayerCharacter->ReloadGun();
+		}
+		
+	}
+	else if (ItemType == EConsumableType::STAMINA_AND_HEALTH_AND_WATER) {
+		Consumer->AddStamina(AdditionToConsumer);
+		Consumer->AddHealth(AdditionToConsumer);
+		if (AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(Consumer)) {
+			PlayerCharacter->ReloadGun();
+		}
+	}
+	else if (ItemType == EConsumableType::POOP) {
+		Consumer->AddStamina(AdditionToConsumer);
+		UGameplayStatics::ApplyDamage(Consumer, AdditionToConsumer, Consumer->GetController(), Consumer, UDamageType::StaticClass());
 	}
 	
 	Destroy();  // The item will be destroyed after getting consumed
 
 }
 
-void AConsumable::DestroyItemHandleFire()
+void AConsumable::DestroyItemHandleFire(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser)
 {
+	if (Health <= 0) return;
 	// TODO: Any destruction sounds and effects will play here
-	Destroy();
+	Health -= HealthReductionFire;
+	if (Health <= 0) {
+		if (DeathMaterial) {
+			BaseMeshComp->SetMaterial(0, DeathMaterial);
+		}
+		
+	}
+	// Destroy();
 }

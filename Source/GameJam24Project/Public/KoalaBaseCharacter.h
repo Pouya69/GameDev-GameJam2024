@@ -33,8 +33,6 @@ public:
 
 	FOnDeath DeathEvent;
 
-	
-
 	UCapsuleComponent* CapsuleComp;
 
 

@@ -11,10 +11,12 @@
  */
 UENUM(BlueprintType)
 enum class EConsumableType {
-	HEALTH_ONLY				UMETA(DisplayName="Health Only"),
-	STAMINA_ONLY			UMETA(DisplayName = "Stamina Only"),
-	STAMINA_AND_HEALTH		UMETA(DisplayName = "Health and Stamina"),
-	WATER		UMETA(DisplayName = "Water"),
+	HEALTH_ONLY							UMETA(DisplayName="Health Only"),
+	STAMINA_ONLY						UMETA(DisplayName = "Stamina Only"),
+	STAMINA_AND_HEALTH					UMETA(DisplayName = "Health and Stamina"),
+	STAMINA_AND_HEALTH_AND_WATER		UMETA(DisplayName = "Health and Stamina and Water"),
+	WATER								UMETA(DisplayName = "Water"),
+	POOP								UMETA(DisplayName = "Poop"),
 };
 
 UCLASS()
@@ -25,15 +27,25 @@ class GAMEJAM24PROJECT_API AConsumable : public ABaseInteractableObject
 public:
 	AConsumable();
 
+
+protected:
+	virtual void BeginPlay() override;
+
 public:
 	void Consume(class AKoalaBaseCharacter* Consumer);
-	void DestroyItemHandleFire();  // For example when the item gets set on fire?
+	UFUNCTION()
+		void DestroyItemHandleFire(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);  // For example when the item gets set on fire?
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		float AdditionToConsumer = 20.f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		EConsumableType ItemType;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
+		float HealthReductionFire = 20;
+
+	UPROPERTY(EditAnywhere, Category = "Death")
+		UMaterialInterface* DeathMaterial;
 
 private:
-	
+	float Health;
 };

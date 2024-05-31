@@ -61,6 +61,7 @@ public:
 		bool IsCarryingItem() const { return ItemCarriedOnBack != nullptr; }
 	void CarryItemOnBack(AActor* ItemToCarry);
 	void DropCurrentCarriedItem();
+	void ReloadGun();
 
 	
 
