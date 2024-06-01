@@ -40,6 +40,12 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
 		class USplineComponent* SplineComponent;
+
+	UPROPERTY(EditAnywhere, Category = "Spline")
+		int BranchNumber;
+	
+	
+	TArray<TTuple<USplineComponent*, float>> BranchesSplinesComponent;
 		
 
 

@@ -63,6 +63,7 @@ public:
 	float FireCreationUpwardsCheck = 50.f;
 
 	TArray<TTuple<FVector, FRotator>> SplineLocations;
+	TArray<TTuple<FVector, FRotator>> BranchLocations;
 
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* SceneRootComp;
@@ -92,7 +93,9 @@ public:
 	void UpdateBoxCollisions();
 	void CheckAndDestroyConsumable(class AConsumable* Consumable);
 
-	void InitializeSpline(class USplineComponent* SplineComponent);
+	void TrunkSplineHandle(class USplineComponent* SplineComponent);
+	void BranchSplineHandle(class USplineComponent* SplineComponent);
+	void InitializeSplines(class ABaseTree* Tree);
 
 private:
 	void MakeFire(FVector Location);
@@ -102,6 +105,7 @@ private:
 	FTimerHandle DamageTimer;
 	FTimerHandle SplineTimer;
 	FTimerHandle CollisionUpdateTimer;
+	FTimerHandle BranchTimerHandle;
 	TArray<AActor*> OverlapActors;
 
 	class USplineComponent* TargetSpline;
@@ -112,7 +116,12 @@ private:
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float IncrementProbabilityRate = 5.f;
 
-	void CalculateSplineLocations(float Time);
-	void SpawnSplineFire();
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
+	float SpawnOnTreeDelay = 1.f;
+
+	void CalculateSplineLocations(USplineComponent* Spline, TArray<TTuple<FVector, FRotator>>& OutLocations, float Time);
+	void SpawnTrunkActors();
+	void SpawnBranchActors();
+	FVector SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations, FTimerHandle& ClearTimer);
 
 };

@@ -191,7 +191,8 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 		}
 	}
 	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
-		InitializeSpline(TreeObject->SplineComponent);
+		//InitializeSpline(TreeObject->SplineComponent);
+		InitializeSplines(TreeObject);
 		/* if(TargetSpline)
 		{
 			GetWorldTimerManager().SetTimer(SplineTimer, this, &AFire::FollowSpline, 1.f, true, 0.f);
@@ -283,62 +284,137 @@ void AFire::ApplyDamageTimer()
 }
 
 
-void AFire::InitializeSpline(class USplineComponent* SplineComponent)
+void AFire::TrunkSplineHandle(class USplineComponent* SplineComponent)
 {
-	TargetSpline = SplineComponent;
-	if(SplineComponent)
+
+	FVector Start = SplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+	FVector End = SplineComponent->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
+	float Length = End.Z - Start.Z;
+	float ActorsNeeded = Length / CollisionBoxExtent;
+
+	float Delay = SplineComponent->Duration / ActorsNeeded;
+	// UE_LOG(LogTemp, Warning, TEXT("Length %f ActorsNeeded %f Delay %f"), Length, ActorsNeeded, Delay);
+
+	for(int i=1; i<=ActorsNeeded;i++)
 	{
-        FVector Start = TargetSpline->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
-        FVector End = TargetSpline->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
-		float Length = End.Z - Start.Z;
-		float ActorsNeeded = Length / CollisionBoxExtent;
-
-		float Delay = SplineComponent->Duration / ActorsNeeded;
-		UE_LOG(LogTemp, Warning, TEXT("Length %f ActorsNeeded %f Delay %f"), Length, ActorsNeeded, Delay);
-
-		for(int i=1; i<=ActorsNeeded;i++)
-		{
-			CalculateSplineLocations(Delay * i);
-		}
-
-		
-		GetWorldTimerManager().SetTimer(SplineTimer,this, &AFire::SpawnSplineFire, Delay, true);
-
+		CalculateSplineLocations(SplineComponent, SplineLocations, Delay * i);
 	}
+
+	
+	GetWorldTimerManager().SetTimer(SplineTimer,this, &AFire::SpawnTrunkActors, SpawnOnTreeDelay, true);
+
 }
 
-void AFire::CalculateSplineLocations(float Time)
+void AFire::BranchSplineHandle(class USplineComponent* SplineComponent)
 {
-	if (TargetSpline)
-    {
-        FVector SplineLocation = TargetSpline->GetLocationAtTime(Time, ESplineCoordinateSpace::World, true);
+	float Length = SplineComponent->GetSplineLength();
+	FVector Start = SplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+	FVector End = SplineComponent->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
+	// UE_LOG(LogTemp, Warning, TEXT("Branch Length: %f | Calculated Length: %s"), Length, *(End - Start).ToString());
+	// Output: Branch Length: 240.000000 | Calculated Length: X=0.000 Y=240.000 Z=0.000. This means it is equal to length
+	float ActorsNeeded = Length / CollisionBoxExtent;
 
-        FRotator SplineRotation = TargetSpline->GetRotationAtTime(Time, ESplineCoordinateSpace::World);
+	float Delay = SplineComponent->Duration / ActorsNeeded;
 
-		FTimerDelegate FireDelegate;
-		SplineLocations.Add(TTuple<FVector, FRotator>(SplineLocation, SplineRotation));
-		
-    }
-}
-
-
-void AFire::SpawnSplineFire()
-{
-	if(SplineLocations.IsEmpty())
+	for(int i=1; i<=ActorsNeeded;i++)
 	{
-		GetWorldTimerManager().ClearTimer(SplineTimer);
+		/* TODO: fix to have different different indexes for different branches
+		1. zindex?
+		*/
+		CalculateSplineLocations(SplineComponent,BranchLocations, Delay * i);
+	}
+		
+	// GetWorld()->GetTimerManager().SetTimer(BranchTimerHandle,this, &AFire::SpawnBranchActors, SpawnOnTreeDelay, true);
+}
+
+
+
+
+void AFire::InitializeSplines(ABaseTree *Tree)
+{
+	bool bTreeHasBranches = Tree->BranchesSplinesComponent.Num() > 0;
+	bool bTreeHasTrunkSpline = Tree->SplineComponent != nullptr;
+
+	if (bTreeHasBranches)
+	{
+		/* TODO: Logic for branches
+		1. check when fire reaches Z axis of branch (should look if branch.Z is +- Fire.Z)
+		2. when reaches, start new timer for branch fire
+		*/
+		for (TTuple<USplineComponent*, float> Tuple : Tree->BranchesSplinesComponent)
+		{
+			USplineComponent* Branch = Tuple.Get<0>();
+			BranchSplineHandle(Branch);
+		}
+	}
+
+	if (bTreeHasTrunkSpline)
+	{
+		TrunkSplineHandle(Tree->SplineComponent);
+	}
+
+
+	
+
+}
+	
+
+void AFire::CalculateSplineLocations(USplineComponent *Spline, TArray<TTuple<FVector, FRotator>>& OutLocations, float Time)
+{
+	FVector SplineLocation = Spline->GetLocationAtTime(Time, ESplineCoordinateSpace::World, true);
+	FRotator SplineRotation = Spline->GetRotationAtTime(Time, ESplineCoordinateSpace::World);
+
+	OutLocations.Add(TTuple<FVector, FRotator>(SplineLocation, SplineRotation));
+}
+
+void AFire::SpawnTrunkActors()
+{
+	FVector LastUsedLocation = SpawnSplineActors(SplineLocations, SplineTimer);
+	bool bTreeHasBranches = BranchLocations.Num() > 0;
+	if (!bTreeHasBranches)
+	{
 		return;
 	}
-
-	TTuple<FVector, FRotator> Location = SplineLocations[0];
+	bool bIsBranchLower = BranchLocations[0].Get<0>().Z < LastUsedLocation.Z;
+	UE_LOG(LogTemp, Warning, TEXT("BranchLocations[0].Get<0>().Z: %f - LastUsedLocation.Z: %f"), BranchLocations[0].Get<0>().Z, LastUsedLocation.Z);
+	if (bIsBranchLower)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("bIsBranchLower entered"));
+		if (!GetWorld()->GetTimerManager().IsTimerActive(BranchTimerHandle))
+		{
+			GetWorld()->GetTimerManager().SetTimer(BranchTimerHandle,this, &AFire::SpawnBranchActors, SpawnOnTreeDelay, true);
+		}
+	}
 	
-	UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
+}
+
+void AFire::SpawnBranchActors()
+{
+	UE_LOG(LogTemp, Warning, TEXT("SpawnBranchActors called"));
+	SpawnSplineActors(BranchLocations, BranchTimerHandle);
+}
+
+FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations, FTimerHandle& ClearTimer)
+{
+	// UE_LOG(LogTemp, Warning, TEXT("Inside here locations num: %d"), OutLocations.Num());
+	if(OutLocations.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Deleting"));
+
+		GetWorldTimerManager().ClearTimer(ClearTimer);
+		return FVector::ZeroVector;
+	}
+
+	TTuple<FVector, FRotator> Location = OutLocations[0];
+	
+	// UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
 	AFire* NewFire = GetWorld()->SpawnActor<AFire>(FireClass, Location.Get<0>(), Location.Get<1>());
 	if(NewFire)
 	{
 		NewFire->SetActorEnableCollision(false);
 	}
 
-	SplineLocations.RemoveAt(0);
+	OutLocations.RemoveAt(0);
 
+	return Location.Get<0>();
 }

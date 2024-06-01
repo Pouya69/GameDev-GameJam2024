@@ -19,12 +19,27 @@ ABaseTree::ABaseTree()
 	SplineComponent->ClearSplinePoints();
 	SplineComponent->AddSplinePoint(FVector::ZeroVector, ESplineCoordinateSpace::Local);
 	SplineComponent->AddSplinePoint(FVector(0,0,500), ESplineCoordinateSpace::Local);
+	
+	
 }
 
 // Called when the game starts or when spawned
 void ABaseTree::BeginPlay()
 {
 	Super::BeginPlay();
+
+	for (int32 i = 0; i < BranchNumber; i++)
+	{
+		if(USplineComponent* BranchSplineComponent = Cast<USplineComponent>(GetDefaultSubobjectByName(*FString::Printf(TEXT("Branch%d"), i))))
+		{
+			FVector Location = BranchSplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+			/* TODO: TArray creation logic
+			1. Not sure if Z calculation should go here or in fire.
+			*/
+			BranchesSplinesComponent.Add(TTuple<USplineComponent*, float>(BranchSplineComponent, Location.Z));
+		}
+		
+	}
 	
 }
 
