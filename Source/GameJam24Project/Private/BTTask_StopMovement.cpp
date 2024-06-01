@@ -22,7 +22,6 @@ EBTNodeResult::Type UBTTask_StopMovement::ExecuteTask(UBehaviorTreeComponent& Ow
 	BlackBoardComp->ClearValue(FName("IsMovingToLocation"));
 	BlackBoardComp->ClearValue(FName("MovingToLocation"));
 	OwnerAIController->StopMovement();
-
 	// OwnerPawn->StopCharacterMovement();
 	return EBTNodeResult::Succeeded;
 }

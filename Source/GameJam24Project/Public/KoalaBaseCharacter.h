@@ -38,6 +38,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Death")
 		UMaterialInterface* DeathMaterial;
+	UPROPERTY(EditAnywhere, Category = "Death")
+		FVector DeathMeshImpulse;
 	UPROPERTY(EditAnywhere, Category="Classes and stuff")
 		TSubclassOf<class AFire> FireClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")

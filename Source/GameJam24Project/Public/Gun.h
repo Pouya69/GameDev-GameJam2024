@@ -47,6 +47,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* Root;
 
+	float GetAmmoLeft() const { return Ammunition; }
+
 	UFUNCTION()
 	void ReloadAmmunition();
 

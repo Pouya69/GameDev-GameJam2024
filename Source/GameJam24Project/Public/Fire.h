@@ -81,6 +81,7 @@ public:
 	virtual float TakeDamage(float Damage, struct FDamageEvent const &DamageEvent,  class AController* InstigatedBy, AActor* DamageCauser) override;
 
 	void UpdateBoxCollisions();
+	void CheckAndDestroyConsumable(class AConsumable* Consumable);
 
 private:
 	void MakeFire(FVector Location);

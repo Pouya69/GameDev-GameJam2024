@@ -9,6 +9,7 @@
 #include "ExtractionArea.h"
 #include "Fire.h"
 #include "NavigationSystem.h"
+#include "BaseTree.h"
 
 void AKoalaGameModeBase::BeginPlay()
 {
@@ -33,14 +34,29 @@ void AKoalaGameModeBase::BeginPlay()
 		FireActorsInLevel = FindActors.Num();
 	}
 	FindActors.Empty();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), TreeClass, FindActors);
+	for (AActor* Actor : FindActors) {
+		TreesInLevel.Add(Cast<ABaseTree>(Actor));
+	}
+	FindActors.Empty();
+
 	ExtractionArea = Cast<AExtractionArea>(UGameplayStatics::GetActorOfClass(GetWorld(), ExtractionAreaClass));
 	SetupTimerForEndGame();
 	// Creating random fire actors
 	FTimerDelegate FireDelegate;
 	FireDelegate.BindLambda([&]() {
-		if (FireActorsInLevel <= MaxFiresAllowed) CreateFireRandom();
+		if (FireActorsInLevel < MaxFiresAllowed) CreateFireRandom();
+	});
+
+
+	// Creating random consumables
+	if (MaxConsumablesAllowed > TreesInLevel.Num()) MaxConsumablesAllowed = TreesInLevel.Num();  // No more than the amount of trees in level
+	FTimerDelegate ConsumableDelegate;
+	ConsumableDelegate.BindLambda([&]() {
+		if (ConsumablesInLevel < MaxConsumablesAllowed) CreateConsumableRandom();
 	});
 	GetWorldTimerManager().SetTimer(TimerHandleFireRandom, FireDelegate, CreateFireEverySeconds, true);
+	GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateFireEverySeconds, true);
 
 }
 
@@ -64,6 +80,19 @@ void AKoalaGameModeBase::CreateFireRandom()
 
 
 
+}
+
+
+void AKoalaGameModeBase::CreateConsumableRandom() {
+	for (ABaseTree* TreeObj : TreesInLevel) {
+		UE_LOG(LogTemp, Warning, TEXT("TREE: %s"), *TreeObj->GetName());
+		if (TreeObj->bCanSpawnFruit && !TreeObj->AlreadyHasConsumableOnTree()) {
+			TreeObj->SpawnConsuamble();
+			ConsumablesInLevel++;
+			break;
+		}
+	}
+	// TreesInLevel[FMath::RandRange(0, TreesInLevel.Num()-1)]->SpawnConsuamble();
 }
 
 

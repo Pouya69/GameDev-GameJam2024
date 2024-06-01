@@ -36,6 +36,11 @@ float UBasicPlayerWidget::GetTimeLeft() const
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetTimeLeftProportional() : 0.f;
 }
 
+float UBasicPlayerWidget::GetGunAmmo() const
+{
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetGunAmmoProportional() : 0.f;
+}
+
 int UBasicPlayerWidget::GetBabyKoalasLeft() const
 {
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetBabyKoalasLeft() : 0;

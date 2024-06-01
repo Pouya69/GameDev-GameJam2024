@@ -56,6 +56,11 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (IsCarryingItem()) {
+		const FTransform Trans = GetMesh()->GetSocketTransform(ItemCarryBoneNameOnMesh);
+		/*if (AKoalaBabyCharacter* KoalaCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
+			// KoalaCharacter->GetMesh()->Location
+		}*/
+		ItemCarriedOnBack->SetActorTransform(GetMesh()->GetSocketTransform(ItemCarryBoneNameOnMesh));
 		// ItemCarriedOnBack
 	}
 	/*if (bIsOnTree) {
@@ -95,7 +100,7 @@ void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 		BabyCharacter->GetCharacterMovement()->StopMovementImmediately();
 		BabyCharacter->GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Flying;
-		
+		// BabyCharacter->GetMesh()->SetSimulatePhysics(true);
 
 	}
 	else {
@@ -105,7 +110,7 @@ void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 	
 	ItemCarriedOnBack = ItemToCarry;
 	
-	// UE_LOG(LogTemp, Warning, TEXT("Carrying: %s"), *ItemCarriedOnBack->GetFullName());
+	UE_LOG(LogTemp, Warning, TEXT("Comp: %s"), *ItemCarriedOnBack->GetRootComponent()->GetName());
 }
 
 void AKoalaPlayerCharacter::DropCurrentCarriedItem()
@@ -114,17 +119,18 @@ void AKoalaPlayerCharacter::DropCurrentCarriedItem()
 
 	ItemCarriedOnBack->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemCarriedOnBack->GetRootComponent());
-	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);
 	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
 		PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
 		BabyCharacter->bIsBeingCarried = false;
+		// BabyCharacter->GetMesh()->SetSimulatePhysics(false);
 
 	}
 	else {
 		PrimRootComp->SetSimulatePhysics(true);
+		PrimRootComp->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	}
 	// We can put the launching the object as well
 	// Works for normal objects for now
@@ -226,6 +232,12 @@ float AKoalaPlayerCharacter::GetTimeLeftProportional() const
 int AKoalaPlayerCharacter::GetBabyKoalasLeft() const
 {
 	return GameMode->BabyKoalasAlive;
+}
+
+float AKoalaPlayerCharacter::GetGunAmmoProportional() const
+{
+	if (!Gun) return 0.f;
+	return Gun->GetAmmoLeft() / Gun->AmmunitionCapacity;
 }
 
 void AKoalaPlayerCharacter::UpdateKoalasAliveWidget()

@@ -28,6 +28,9 @@ public:
 
 	virtual void Interact() override;
 
+
+public:
+	// Fire handling
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Fire")
 		bool bIsOnFire;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire")
@@ -38,6 +41,20 @@ public:
 
 	void StartFire();
 	FTimerHandle TreeFireTimer;
-	
-	
+
+public:
+	// Consumable handling
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable")
+		bool bCanSpawnFruit;  // For if a tree that cannot spawn a tree
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable")
+		float ConsumableExistCheckRadius = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable")
+		TSubclassOf<class AConsumable> ConsumableClass;  // The type of consumable spawns in BP
+	UPROPERTY(EditAnywhere, Category = "Consumable")
+		USceneComponent* ConsumableSpawnLocation;  // The type of consumable spawns in BP
+	UPROPERTY(EditAnywhere, Category = "Consumable")
+		USceneComponent* ConsumableSpawnLocation2;  // The type of consumable spawns in BP
+
+	bool AlreadyHasConsumableOnTree() const;
+	void SpawnConsuamble();
 };

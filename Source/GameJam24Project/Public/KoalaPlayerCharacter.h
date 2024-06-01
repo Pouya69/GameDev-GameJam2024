@@ -94,6 +94,8 @@ public:
 		float GetTimeLeftProportional() const;
 	UFUNCTION(BlueprintCallable)
 		int GetBabyKoalasLeft() const;
+	UFUNCTION(BlueprintCallable)
+		float GetGunAmmoProportional() const;
 
 	void UpdateKoalasAliveWidget();
 

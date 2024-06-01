@@ -17,6 +17,10 @@ class GAMEJAM24PROJECT_API AKoalaGameModeBase : public AGameModeBase
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		TArray<class AMissionObjective*> MissionObjectives;
+	UPROPERTY(VisibleAnywhere)
+		TArray<class ABaseTree*> TreesInLevel;
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<class ABaseTree> TreeClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		int BabyKoalasAlive;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -69,6 +73,15 @@ public:
 		TSubclassOf<class AFire> FireClass;
 	void CreateFireRandom();
 
+public:
+	// Items placement
+	FTimerHandle TimerHandleConsumablesRandom;
+	int ConsumablesInLevel;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable Random Creation")
+		int MaxConsumablesAllowed = 10;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable Random Creation")
+		int CreateConsumableEverySeconds = 3;
+	void CreateConsumableRandom();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

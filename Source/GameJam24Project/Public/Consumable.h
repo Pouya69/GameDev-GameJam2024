@@ -47,5 +47,5 @@ public:
 		UMaterialInterface* DeathMaterial;
 
 private:
-	float Health;
+	float Health = 100.f;
 };

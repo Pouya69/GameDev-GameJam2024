@@ -5,6 +5,7 @@
 #include "KoalaBaseCharacter.h"
 #include "KoalaPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "KoalaGameModeBase.h"
 
 AConsumable::AConsumable()
 {
@@ -21,7 +22,7 @@ void AConsumable::BeginPlay()
 
 void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 {
-	if (Consumer == nullptr) return;
+	if (Consumer == nullptr || Health <= 0) return;
 	// TODO: Also the effects and sounds will play here
 	Super::Interact();
 	if (ItemType == EConsumableType::STAMINA_ONLY) {
@@ -51,7 +52,8 @@ void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 		Consumer->AddStamina(AdditionToConsumer);
 		UGameplayStatics::ApplyDamage(Consumer, AdditionToConsumer, Consumer->GetController(), Consumer, UDamageType::StaticClass());
 	}
-	
+	AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
+	GameMode->ConsumablesInLevel--;
 	Destroy();  // The item will be destroyed after getting consumed
 
 }
@@ -60,12 +62,13 @@ void AConsumable::DestroyItemHandleFire(AActor* DamagedActor, float Damage, cons
 {
 	if (Health <= 0) return;
 	// TODO: Any destruction sounds and effects will play here
-	Health -= HealthReductionFire;
+	Health -= Damage;
 	if (Health <= 0) {
 		if (DeathMaterial) {
 			BaseMeshComp->SetMaterial(0, DeathMaterial);
 		}
-		
+		AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
+		GameMode->ConsumablesInLevel--;
 	}
 	// Destroy();
 }

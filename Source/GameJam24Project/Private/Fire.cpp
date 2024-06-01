@@ -180,6 +180,7 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 		return;
 	}
 	const bool bTimerExists = GetWorldTimerManager().TimerExists(DamageTimer);
+	if (bTimerExists) return;
 	if(AKoalaBaseCharacter* KoalaBaseCharacter = Cast<AKoalaBaseCharacter>(OtherActor))
 	{
 		if(!bTimerExists)
@@ -189,6 +190,12 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 	}
 	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
 		TreeObject->StartFire();
+	}
+	else if (AConsumable* Consumable = Cast<AConsumable>(OtherActor)) {
+		if(!bTimerExists)
+		{
+			GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
+		}
 	}
 }
 
@@ -239,12 +246,14 @@ void AFire::MakeFire(FVector Location)
 void AFire::ApplyDamageTimer()
 {
 	UpdateBoxCollisions();
-	const int Num = OverlapActors.Num();
+	OverlapActors.Empty();
+	GetOverlappingActors(OverlapActors);
 	if (OverlapActors.IsEmpty())
 	{
 		GetWorldTimerManager().ClearTimer(DamageTimer);
 		return;
 	}
+	const int Num = OverlapActors.Num();
 	AKoalaBaseCharacter* KoalaBasePlayer = Cast<AKoalaBaseCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	if (!KoalaBasePlayer) {
 		GetWorldTimerManager().ClearAllTimersForObject(this);
@@ -254,13 +263,8 @@ void AFire::ApplyDamageTimer()
 		GetWorldTimerManager().ClearAllTimersForObject(this);
 		return;
 	}
-	if (OverlapActors.IsEmpty())
-	{
-		GetWorldTimerManager().ClearTimer(DamageTimer);
-		return;
-	}
 	for (int i = 0; i < Num; i++) {
-		if (!OverlapActors.IsValidIndex(i) || !OverlapActors[i]) {
+		if (!OverlapActors.IsValidIndex(i) || OverlapActors[i] == nullptr) {
 			OverlapActors.Empty();
 			GetWorldTimerManager().ClearTimer(DamageTimer);
 			return;

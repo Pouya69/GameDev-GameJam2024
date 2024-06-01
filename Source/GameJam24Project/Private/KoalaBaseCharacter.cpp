@@ -132,6 +132,7 @@ void AKoalaBaseCharacter::Die()
 	// TODO: Death stuff
 	// This line below alerts other listeners of the event that character has died
 	if (bIsDead) return;
+	StopCharacterMovement();
 	CapsuleComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);  // WIll no longer be pawn
 	if (DeathMaterial != nullptr) {
 		GetMesh()->SetMaterial(0, DeathMaterial);
