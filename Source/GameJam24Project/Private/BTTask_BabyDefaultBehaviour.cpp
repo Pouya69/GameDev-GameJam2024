@@ -20,8 +20,7 @@ EBTNodeResult::Type UBTTask_BabyDefaultBehaviour::ExecuteTask(UBehaviorTreeCompo
 	AAIController* OwnerAIController = OwnerComp.GetAIOwner();
 	AKoalaBabyCharacter* OwnerPawn = Cast<AKoalaBabyCharacter>(OwnerAIController->GetPawn());
 	UBlackboardComponent* BlackBoardComp = OwnerComp.GetBlackboardComponent();
-	// TODO: Set the speed and stuff for the koala when on fire
-
+	OwnerPawn->ChangeCharacterSpeed(false);
 	bool bAlreadyHasMovingLocation = BlackBoardComp->GetValueAsBool(FName("IsMovingToLocation"));
 	if (bAlreadyHasMovingLocation) {
 		return EBTNodeResult::Succeeded;

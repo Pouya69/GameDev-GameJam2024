@@ -38,6 +38,8 @@ private:
 	UFUNCTION(BlueprintCallable)
 		bool IsOnFire() const;
 	UFUNCTION(BlueprintCallable)
+		bool IsHavingWeapon() const;
+	UFUNCTION(BlueprintCallable)
 		float GetTimeLeft() const;
 	UFUNCTION(BlueprintCallable)
 		int GetBabyKoalasLeft() const;

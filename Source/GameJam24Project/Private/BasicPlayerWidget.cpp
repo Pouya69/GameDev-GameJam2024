@@ -31,6 +31,11 @@ bool UBasicPlayerWidget::IsOnFire() const
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->IsOnFire() : false;
 }
 
+bool UBasicPlayerWidget::IsHavingWeapon() const
+{
+	return (PlayerCharacter != nullptr) ? !PlayerCharacter->bIsOnTree && !PlayerCharacter->IsDead() : false;
+}
+
 float UBasicPlayerWidget::GetTimeLeft() const
 {
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetTimeLeftProportional() : 0.f;

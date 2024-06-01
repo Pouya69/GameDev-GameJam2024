@@ -79,6 +79,7 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 	if (UEnhancedInputComponent* EnhancedPlayerInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		EnhancedPlayerInputComponent->BindAction(MoveAction, ETriggerEvent::None, this, &AKoalaPlayerCharacter::NotMoving);
 		EnhancedPlayerInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Move);
 		EnhancedPlayerInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Look);
 		EnhancedPlayerInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PlayerJump);
@@ -87,6 +88,14 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Shoot);
 	}
 
+}
+
+void AKoalaPlayerCharacter::Die()
+{
+	// Destroy all the widgets
+	if (BasicPlayerWidget)	BasicPlayerWidget->RemoveFromParent();
+	if (ObjectivesWidget)	ObjectivesWidget->RemoveFromParent();
+	Super::Die();
 }
 
 void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
@@ -163,6 +172,11 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 	if (Input.X != 0.0f)
 	{
 		if (bIsOnTree) {
+			if (Input.Y != 0.0f) {
+				ClimbingDir = 0;
+				return;
+			}
+			ClimbingDir = Input.X > 0 ? 90 : -90;
 			if (CurrentClimbingTree == nullptr) return;
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
 			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
@@ -177,6 +191,9 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 			// AddMovementInput(MovementDirection, Input.X);
 			return;
 		}
+		else {
+			ClimbingDir = 0;
+		}
 		const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
 		AddMovementInput(MovementDirection, Input.X);
 	}
@@ -184,6 +201,11 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 	if (Input.Y != 0.0f)
 	{
 		if (bIsOnTree) {
+			if (Input.X != 0.0f) { 
+				ClimbingDir = 0;
+				return;
+			}
+			ClimbingDir = Input.Y > 0 ? 180 : -180;
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
 			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
 			CurrentTreeLocation.Z = GetActorLocation().Z;
@@ -197,11 +219,20 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 			// AddMovementInput(MovementDirection, Input.X);
 			return;
 		}
+		else {
+			ClimbingDir = 0;
+		}
 		const FVector MovementDirection = MovementRotation.RotateVector(FVector::ForwardVector);
 		AddMovementInput(MovementDirection, Input.Y);
 	}
+	ClimbingDir = 0;
 
 
+}
+
+void AKoalaPlayerCharacter::NotMoving(const FInputActionValue& Value)
+{
+	ClimbingDir = 0;
 }
 
 void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
@@ -217,6 +248,9 @@ void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 	if (!bIsOnTree || CurrentClimbingTree == nullptr) return;
+	if (Gun) {
+		Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_socket"));
+	}
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
 	// Super::Jump();
 	bIsOnTree = false;
@@ -329,6 +363,13 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	}
 	FHitResult HitResult;
 	if (AreThereAnyTreesAround(HitResult)) {
+		/*if (TreeStartClimbingMontage) {
+			DisableInput(PlayerController);
+			PlayAnimMontage(TreeStartClimbingMontage);
+		}*/
+		if (Gun) {
+			Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, ItemCarryBoneNameOnMeshWEAPON);
+		}
 		// TODO: Attach to tree
 		// We first teleport the player to the tree
 		CurrentClimbingTree = Cast<ABaseTree>(HitResult.GetActor());
@@ -341,7 +382,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		SetActorLocation(TargetLocation);
 		PlayerController->SetControlRotation((-1 * Direction).Rotation());
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);  // To allow the character to go up and down freely
-		bIsOnTree = true;
+		bIsOnTree = true;  // It is set in Anim Montage
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		return;
 	}

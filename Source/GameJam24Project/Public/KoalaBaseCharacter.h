@@ -92,7 +92,13 @@ public:
 	
 	FTimerHandle SleepTimerHandle;
 
-
+public:
+	// Movement
+	UPROPERTY(EditAnywhere, Category = "Speeds")
+		float NormalSpeed = 100.f;
+	UPROPERTY(EditAnywhere, Category = "Speeds")
+		float RunningSpeed = 200.f;
+	void ChangeCharacterSpeed(bool bShouldRun);
 
 private:
 	/** Broadcasts whenever the layer changes */

@@ -28,7 +28,7 @@ void AKoalaBaseCharacter::BeginPlay()
 	Super::BeginPlay();
 	//OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
 	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
-	
+	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	
 }
 
@@ -132,6 +132,21 @@ void AKoalaBaseCharacter::Die()
 	// TODO: Death stuff
 	// This line below alerts other listeners of the event that character has died
 	if (bIsDead) return;
+
+	// SetRootComponent(GetMesh());
+	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
+	// CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+	// CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+
+	GetMesh()->SetSimulatePhysics(true);
+	GetMesh()->AddImpulse(DeathMeshImpulse);
+	// GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+
 	StopCharacterMovement();
 	CapsuleComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldDynamic);  // WIll no longer be pawn
 	if (DeathMaterial != nullptr) {
@@ -195,4 +210,9 @@ void AKoalaBaseCharacter::Sleep()
 void AKoalaBaseCharacter::StopCharacterMovement()
 {
 	GetCharacterMovement()->StopMovementImmediately();
+}
+
+void AKoalaBaseCharacter::ChangeCharacterSpeed(bool bShouldRun)
+{
+	GetCharacterMovement()->MaxWalkSpeed = bShouldRun ? RunningSpeed : NormalSpeed;
 }
