@@ -128,7 +128,9 @@ void AKoalaPlayerCharacter::DropCurrentCarriedItem()
 
 	ItemCarriedOnBack->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemCarriedOnBack->GetRootComponent());
+	PrimRootComp->SetWorldRotation(FRotator::ZeroRotator);
 	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
+		
 		PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);

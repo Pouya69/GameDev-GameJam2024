@@ -23,7 +23,7 @@
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	// PrimaryActorTick.bCanEverTick = true;
 	
 	SceneRootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Scene Root Comp"));
 	SetRootComponent(SceneRootComp);
