@@ -38,6 +38,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire")
 		int TreeFireDamage;
 
+	UPROPERTY(EditAnywhere, Category = "Spline")
+		class USplineComponent* SplineComponent;
+		
+
 
 	void StartFire();
 	FTimerHandle TreeFireTimer;

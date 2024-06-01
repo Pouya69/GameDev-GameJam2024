@@ -3,6 +3,7 @@
 
 #include "BaseTree.h"
 #include "Consumable.h"
+#include "Components/SplineComponent.h"
 
 ABaseTree::ABaseTree()
 {
@@ -10,8 +11,14 @@ ABaseTree::ABaseTree()
 	PrimaryActorTick.bCanEverTick = true;
 	ConsumableSpawnLocation = CreateDefaultSubobject<USceneComponent>(FName("Consumable Spawn Location 1"));
 	ConsumableSpawnLocation2 = CreateDefaultSubobject<USceneComponent>(FName("Consumable Spawn Location 2"));
+	SplineComponent = CreateDefaultSubobject<USplineComponent>(FName("Spline Component"));
 	ConsumableSpawnLocation->SetupAttachment(BaseMeshComp);
 	ConsumableSpawnLocation2->SetupAttachment(BaseMeshComp);
+	SplineComponent->SetupAttachment(BaseMeshComp);
+
+	SplineComponent->ClearSplinePoints();
+	SplineComponent->AddSplinePoint(FVector::ZeroVector, ESplineCoordinateSpace::Local);
+	SplineComponent->AddSplinePoint(FVector(0,0,500), ESplineCoordinateSpace::Local);
 }
 
 // Called when the game starts or when spawned

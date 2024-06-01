@@ -32,6 +32,13 @@ public:
 	float SpreadTime = 3.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
+	float SplineTime = 3.f;
+
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
+	float SplineDelay;
+
+
+	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float CollisionBoxExtent = 50.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
@@ -54,6 +61,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
 	float FireCreationUpwardsCheck = 50.f;
+
+	TArray<TTuple<FVector, FRotator>> SplineLocations;
 
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* SceneRootComp;
@@ -83,19 +92,27 @@ public:
 	void UpdateBoxCollisions();
 	void CheckAndDestroyConsumable(class AConsumable* Consumable);
 
+	void InitializeSpline(class USplineComponent* SplineComponent);
+
 private:
 	void MakeFire(FVector Location);
 	bool bIsCheckingOnTree = false;
 	FVector LocationToSpawnFrom;
 	FTimerHandle SpreadTimer;
 	FTimerHandle DamageTimer;
+	FTimerHandle SplineTimer;
 	FTimerHandle CollisionUpdateTimer;
 	TArray<AActor*> OverlapActors;
+
+	class USplineComponent* TargetSpline;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float SpawnProbability = 20.f;
 	
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float IncrementProbabilityRate = 5.f;
+
+	void CalculateSplineLocations(float Time);
+	void SpawnSplineFire();
 
 };

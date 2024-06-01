@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Components/BoxComponent.h"
+#include "Components/SplineComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -23,7 +24,7 @@
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	SceneRootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Scene Root Comp"));
 	SetRootComponent(SceneRootComp);
@@ -57,18 +58,18 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	UpdateBoxCollisions();
+	/* UpdateBoxCollisions();
 	if (GetRandomLocation(LocationToSpawnFrom)) {
 		SpawnFire(LocationToSpawnFrom);
 		
 	}
-	SpawnProbability += IncrementProbabilityRate;
+	SpawnProbability += IncrementProbabilityRate; */
 	
 }
 
 bool AFire::GetRandomLocation(FVector& OutLocation)
 {
-	FCollisionQueryParams Params;
+	/* FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	FHitResult HitResult;
 	const FVector SpawnLocFireExists = OutLocation + (FVector::UpVector * FireCreationUpwardsCheck);
@@ -103,7 +104,7 @@ bool AFire::GetRandomLocation(FVector& OutLocation)
 			OutLocation = GetActorLocation();
 			UE_LOG(LogTemp, Warning, TEXT("Reset"));
 		}
-	}
+	} */
 	/*
 	bool bIsOnTree = false;
 	for (const AActor* Actor : OverlapActors) {
@@ -171,6 +172,7 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 
 void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Overlapping %s"), *OtherActor->GetName());
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
 	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass()) || OtherActor->IsA(AConsumable::StaticClass())) {
@@ -189,7 +191,12 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 		}
 	}
 	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
-		TreeObject->StartFire();
+		InitializeSpline(TreeObject->SplineComponent);
+		/* if(TargetSpline)
+		{
+			GetWorldTimerManager().SetTimer(SplineTimer, this, &AFire::FollowSpline, 1.f, true, 0.f);
+		} */
+		//TreeObject->StartFire();
 	}
 	else if (AConsumable* Consumable = Cast<AConsumable>(OtherActor)) {
 		if(!bTimerExists)
@@ -273,4 +280,65 @@ void AFire::ApplyDamageTimer()
 		UGameplayStatics::ApplyDamage(OverlapActors[i], TickDamage, KoalaBasePlayer->GetController(), KoalaBasePlayer, UDamageType::StaticClass());
 	}
 	
+}
+
+
+void AFire::InitializeSpline(class USplineComponent* SplineComponent)
+{
+	TargetSpline = SplineComponent;
+	if(SplineComponent)
+	{
+        FVector Start = TargetSpline->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+        FVector End = TargetSpline->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
+		float Length = End.Z - Start.Z;
+		float ActorsNeeded = Length / CollisionBoxExtent;
+
+		float Delay = SplineComponent->Duration / ActorsNeeded;
+		UE_LOG(LogTemp, Warning, TEXT("Length %f ActorsNeeded %f Delay %f"), Length, ActorsNeeded, Delay);
+
+		for(int i=1; i<=ActorsNeeded;i++)
+		{
+			CalculateSplineLocations(Delay * i);
+		}
+
+		
+		GetWorldTimerManager().SetTimer(SplineTimer,this, &AFire::SpawnSplineFire, Delay, true);
+
+	}
+}
+
+void AFire::CalculateSplineLocations(float Time)
+{
+	if (TargetSpline)
+    {
+        FVector SplineLocation = TargetSpline->GetLocationAtTime(Time, ESplineCoordinateSpace::World, true);
+
+        FRotator SplineRotation = TargetSpline->GetRotationAtTime(Time, ESplineCoordinateSpace::World);
+
+		FTimerDelegate FireDelegate;
+		SplineLocations.Add(TTuple<FVector, FRotator>(SplineLocation, SplineRotation));
+		
+    }
+}
+
+
+void AFire::SpawnSplineFire()
+{
+	if(SplineLocations.IsEmpty())
+	{
+		GetWorldTimerManager().ClearTimer(SplineTimer);
+		return;
+	}
+
+	TTuple<FVector, FRotator> Location = SplineLocations[0];
+	
+	UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
+	AFire* NewFire = GetWorld()->SpawnActor<AFire>(FireClass, Location.Get<0>(), Location.Get<1>());
+	if(NewFire)
+	{
+		NewFire->SetActorEnableCollision(false);
+	}
+
+	SplineLocations.RemoveAt(0);
+
 }
