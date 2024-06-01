@@ -34,6 +34,8 @@ public:
 
 	APlayerController* PlayerController;
 
+	virtual void Die() override;
+
 
 public:
 	// Components
@@ -50,6 +52,8 @@ public:
 	// Interactions
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		FName ItemCarryBoneNameOnMesh;
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
+		FName ItemCarryBoneNameOnMeshWEAPON;
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		float InteractionRange = 100.f;
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
@@ -99,8 +103,16 @@ public:
 
 	void UpdateKoalasAliveWidget();
 
+public:
+	// Animations
+	float ClimbingDir;
+
+	UPROPERTY(EditAnywhere, Category = "Animations | Locomotion")
+		UAnimMontage* TreeStartClimbingMontage;
+
 private:
 	void Move(const FInputActionValue& Value);
+	void NotMoving(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
 	void PickupAndCarryItem(const FInputActionValue& Value);
