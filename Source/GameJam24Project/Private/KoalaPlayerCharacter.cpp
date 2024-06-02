@@ -57,7 +57,7 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (IsCarryingItem()) {
-		const FTransform Trans = GetMesh()->GetSocketTransform(ItemCarryBoneNameOnMesh);
+		// const FTransform Trans = GetMesh()->GetSocketTransform(ItemCarryBoneNameOnMesh);
 		/*if (AKoalaBabyCharacter* KoalaCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
 			// KoalaCharacter->GetMesh()->Location
 		}*/
@@ -75,7 +75,6 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
 
 
 	if (UEnhancedInputComponent* EnhancedPlayerInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
@@ -103,6 +102,7 @@ void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemToCarry)) {
+		BabyCharacter->ResetCharacterMesh();
 		BabyCharacter->bIsBeingCarried = true;
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -129,7 +129,7 @@ void AKoalaPlayerCharacter::DropCurrentCarriedItem()
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemCarriedOnBack->GetRootComponent());
 	PrimRootComp->SetWorldRotation(FRotator::ZeroRotator);
 	if (AKoalaBabyCharacter* BabyCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
-		
+		BabyCharacter->ResetCharacterMesh();
 		PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 		BabyCharacter->GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Block);
@@ -255,6 +255,9 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 	}
 	if (Gun) {
 		Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_socket"));
+	}
+	if (JumpingSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpingSound, GetActorLocation(), SoundPitches);
 	}
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
 	// Super::Jump();
@@ -398,6 +401,9 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		bIsOnTree = true;  // It is set in Anim Montage
 		GetCharacterMovement()->bOrientRotationToMovement = false;
 		return;
+	}
+	if (JumpingSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpingSound, GetActorLocation(), SoundPitches);
 	}
 	
 	

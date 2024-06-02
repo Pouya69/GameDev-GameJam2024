@@ -12,6 +12,7 @@
 #include "Gun.h"
 #include "KoalaGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
+#include "NiagaraComponent.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -20,7 +21,8 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 	// PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bCanEverTick = true;
 	CapsuleComp = Cast<UCapsuleComponent>(GetRootComponent());
-	
+	NiagaraSleeping = CreateDefaultSubobject<UNiagaraComponent>(FName("Sleeping Effect"));
+	NiagaraSleeping->SetupAttachment(GetMesh(), FName("sleeping"));
 	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Overlap);
 	
 	
@@ -30,31 +32,36 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 void AKoalaBaseCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	InitialMeshRotation = GetMesh()->GetRelativeRotation();
 	//OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
 	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
 	GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
+	if (NiagaraSleeping) {
+		NiagaraSleeping->SetHiddenInGame(true);
+	}
+	SoundPitches = this->IsA(AKoalaPlayerCharacter::StaticClass()) ? 1.f : 5.f;
 }
 
 // Called every frame
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (!GameMode || GameMode->bGameIsOver || bIsBeingCarried || bIsDead) {
+	if (!GameMode || GameMode->bGameIsOver || bIsDead) {
 		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 		SetActorTickEnabled(false);
 		return;
 	}  // Stamina will not reduce if it is being carried
-	if (bIsBeingCarried || bIsDead) {
-		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
-		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
-	}
+	// if (bIsBeingCarried || bIsDead) {
 	if (Stamina <= 0) {
-		Sleep();
+		if (!IsSleeping()) {
+			Sleep();
+		}
 		return;
 	}
-	float StaminaFinalDeducationAmount = IsCharacterMoving() ? (StaminaDeductionRate * StaminaDeductionMultiplierMoving) : StaminaDeductionRate;
+	const float StaminaFinalDeducationAmount = (IsCharacterMoving() ? (StaminaDeductionRate * StaminaDeductionMultiplierMoving) : StaminaDeductionRate);
 	Stamina -= StaminaFinalDeducationAmount;
 	// UE_LOG(LogTemp, Warning, TEXT("Stamina: %f"), GetStamina());
 
@@ -138,6 +145,9 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 	}
 	LastDamageTime = GetWorld()->GetTimeSeconds();
 	// float ActualDamage = Super::TakeDamage(Damage, DamageEvent, InstigatedBy, DamageCauser);
+	if (OnFireSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), OnFireSound, GetActorLocation(), 1.5, SoundPitches);
+	}
 	Health -= Damage;
 	UE_LOG(LogTemp, Warning, TEXT("New Health, %s: %f"), *GetName(), Health);
 	if (Health <= 0) {
@@ -149,9 +159,12 @@ float AKoalaBaseCharacter::TakeDamage(float Damage, FDamageEvent const &DamageEv
 
 void AKoalaBaseCharacter::Die()
 {
-	// TODO: Death stuff
+	if (DeathSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation(), 1.5, SoundPitches);
+	}
 	// This line below alerts other listeners of the event that character has died
-	GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 	GetWorldTimerManager().ClearAllTimersForObject(this);
 	if (bIsDead) return;
 	// SetRootComponent(GetMesh());
@@ -191,6 +204,7 @@ void AKoalaBaseCharacter::AddHealth(float Amount)
 	// TODO: Any effects and sounds will play here
 	Health += Amount;
 	if (Health > 100) Health = 100;
+	if (Health < 0) Health = 0;
 }
 
 void AKoalaBaseCharacter::AddStamina(float Amount)
@@ -198,18 +212,30 @@ void AKoalaBaseCharacter::AddStamina(float Amount)
 	// TODO: Any effects and sounds will play here
 	Stamina += Amount;
 	if (Stamina > 100) Stamina = 100;
+	else if (Stamina < 0) Stamina = 0;
 }
 
 void AKoalaBaseCharacter::Sleep()
 {
-	if (!GameMode || GameMode->bGameIsOver || IsSleeping() || IsDead()) {
+	if (!GameMode || GameMode->bGameIsOver || IsDead()) {
 		GetWorldTimerManager().ClearAllTimersForObject(this);
 		return;
 	}
 	if (GetWorldTimerManager().TimerExists(SleepTimerHandle)) {
-		GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
+		GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 		return;
 	}
+	if (AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(this)) {
+		PlayerCharacter->PlayerController->SetControlRotation(FRotator(-50, 0, 0));
+		DisableInput(PlayerCharacter->PlayerController);
+		PlayerCharacter->DropCurrentCarriedItem();
+		PlayerCharacter->DetachFromCurrentTree();
+	}
+	if (NiagaraSleeping) {
+		NiagaraSleeping->SetHiddenInGame(false);
+	}
+	bIsSleeping = true;
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindLambda([&]() {
 		if (GameMode && !GameMode->bGameIsOver) {
@@ -219,7 +245,11 @@ void AKoalaBaseCharacter::Sleep()
 					EnableInput((PlayerController));
 				}
 				bIsSleeping = false;
+				if (NiagaraSleeping) {
+					NiagaraSleeping->SetHiddenInGame(true);
+				}
 				Stamina = StaminaAfterSleep;
+				GetWorldTimerManager().ClearTimer(SleepSoundTimerHandle);
 				// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 			}
 		}
@@ -228,15 +258,24 @@ void AKoalaBaseCharacter::Sleep()
 			GetWorldTimerManager().ClearTimer(SleepTimerHandle);
 		}*/
 	});
-	if (GetController()->IsPlayerController()) {
-		DisableInput(Cast<APlayerController>(GetController()));
-		AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(this);
-		PlayerCharacter->DropCurrentCarriedItem();
-		PlayerCharacter->DetachFromCurrentTree();
+	if (SleepingSound) {
+		FTimerDelegate TimerDelegateSleepingSound;
+		TimerDelegateSleepingSound.BindLambda([&]() {
+			if (GameMode && !GameMode->bGameIsOver) {
+				if (!bIsDead && !IsOnFire()) {
+					if (SleepingSound) {
+						UGameplayStatics::PlaySoundAtLocation(GetWorld(), SleepingSound, GetActorLocation(), 1.5, SoundPitches);
+					}
+				}
+				
+			}
+		});
+		GetWorldTimerManager().SetTimer(SleepSoundTimerHandle, TimerDelegateSleepingSound, MakeSleepingSoundEverySeconds, true);
 	}
-	bIsSleeping = true;
+	
 	// UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
+	
 }
 
 void AKoalaBaseCharacter::StopCharacterMovement()
@@ -247,4 +286,9 @@ void AKoalaBaseCharacter::StopCharacterMovement()
 void AKoalaBaseCharacter::ChangeCharacterSpeed(bool bShouldRun)
 {
 	GetCharacterMovement()->MaxWalkSpeed = bShouldRun ? RunningSpeed : NormalSpeed;
+}
+
+void AKoalaBaseCharacter::ResetCharacterMesh()
+{
+	GetMesh()->SetWorldRotation(InitialMeshRotation);
 }

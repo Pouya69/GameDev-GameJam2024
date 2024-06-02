@@ -19,7 +19,8 @@ void AKoalaBabyCharacter::BeginPlay()
 void AKoalaBabyCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	// UE_LOG(LogTemp, Warning, TEXT("Baby fire: %d"), IsOnFire() ? 1 : 0);
+
+	AddStamina(FMath::RandRange(-StaminaDeductionRateRandomness, StaminaDeductionRateRandomness));
 }
 
 void AKoalaBabyCharacter::Die()

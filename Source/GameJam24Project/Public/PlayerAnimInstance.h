@@ -39,4 +39,6 @@ public:
 		bool bIsOnFire;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		bool bIsDead;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		bool bIsSleeping;
 };

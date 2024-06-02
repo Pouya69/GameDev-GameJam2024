@@ -35,6 +35,8 @@ void UBabyAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	CharacterSpeed = MovementComp->Velocity.Length();
 	CharacterDirection = CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
 	bIsFalling = MovementComp->IsFalling();
+	bIsSleeping = OwnerPawn->IsSleeping();
+	bIsBeingCarried = OwnerPawn->bIsBeingCarried;
 	AAIController* MyAIController = Cast<AAIController>(OwnerPawn->GetController());
 	if (!MyAIController) {
 		// UE_LOG(LogTemp, Warning, TEXT("AI Controller invalid for: %s"), *GetFullName());

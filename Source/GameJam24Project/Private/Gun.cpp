@@ -58,21 +58,23 @@ void AGun::PullTrigger()
 		ReleaseTrigger();
 		return;
 	}
+	
 	// GunBeamMesh->SetHiddenInGame(false);
 	Niagara->SetHiddenInGame(false);
 	Ammunition -= AmmoConsumeRate;
 	FHitResult HitResult;
-
 	// Uncomment this line when weapon ready and muzzle socket created on it
 	FVector Start = MeshComponent->GetSocketLocation(FName("muzzle"));
 	FVector End = Start + (PlayerCharacter->PlayerController->GetControlRotation().Vector() * FireRange);
 	// DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.f);
 	// FVector BeamScale = NotHittingScale3D;
 	FRotator BeamRotation = InitialRotationBeam;
+	if (ShootSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShootSound, Start, 1.5f);
+	}
 	if(GunTrace(HitResult))
 	{
 		FVector NewEnd = HitResult.ImpactPoint;
-		
 		NiagaraEnd->SetWorldLocation(NewEnd);
 		
 		// BeamRotation = UKismetMathLibrary::GetDirectionUnitVector(Start, NewEnd).Rotation();
@@ -92,8 +94,15 @@ void AGun::PullTrigger()
 					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraHitFire, HitResult.ImpactPoint);
 				}
 				FireObjectHit->DestroyFire(HitResult.GetComponent());
+				if (FireHitSound) {
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireHitSound, NewEnd, 1.5f);
+				}
+				
 			}
 			else {
+				if (HitSound) {
+					UGameplayStatics::PlaySoundAtLocation(GetWorld(), HitSound, NewEnd, 1.5f);
+				}
 				// UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraHitObject, HitResult.ImpactPoint);
 			}
 			
@@ -111,6 +120,9 @@ void AGun::PullTrigger()
 
 void AGun::ReleaseTrigger()
 {
+	if (StopShootSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), StopShootSound, MeshComponent->GetSocketLocation(FName("muzzle")), 1.5f);
+	}
 	GunBeamMesh->SetHiddenInGame(true);
 	Niagara->SetHiddenInGame(true);
 	NiagaraEnd->SetHiddenInGame(true);
@@ -153,5 +165,8 @@ bool AGun::GunTrace(FHitResult& Hit)
 
 void AGun::ReloadAmmunition()
 {
+	if (RefillSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), RefillSound, GetActorLocation(), 1.5f);
+	}
 	Ammunition = AmmunitionCapacity;
 }

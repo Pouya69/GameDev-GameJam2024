@@ -29,6 +29,8 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	OnGroundCharacterDirection = CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
 	bIsFalling = MovementComp->IsFalling();
 	bIsClimbingTree = OwnerPawn->bIsOnTree;
+	bIsSleeping = OwnerPawn->IsSleeping();
+	bIsOnFire = OwnerPawn->IsOnFire();
 	if (!bIsClimbingTree) {
 		ClimbingCharacterDirection = 0;
 	}

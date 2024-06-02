@@ -26,12 +26,21 @@ void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 	// TODO: Also the effects and sounds will play here
 	Super::Interact();
 	if (ItemType == EConsumableType::STAMINA_ONLY) {
+		if (ConsumeSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ConsumeSound, Consumer->GetActorLocation(), 1.5);
+		}
 		Consumer->AddStamina(AdditionToConsumer);
 	}
 	else if (ItemType == EConsumableType::HEALTH_ONLY) {
+		if (ConsumeSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ConsumeSound, Consumer->GetActorLocation(), 1.5);
+		}
 		Consumer->AddHealth(AdditionToConsumer);
 	}
 	else if (ItemType == EConsumableType::STAMINA_AND_HEALTH) {
+		if (ConsumeSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ConsumeSound, Consumer->GetActorLocation(), 1.5);
+		}
 		Consumer->AddStamina(AdditionToConsumer);
 		Consumer->AddHealth(AdditionToConsumer);
 	}
@@ -42,6 +51,9 @@ void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 		
 	}
 	else if (ItemType == EConsumableType::STAMINA_AND_HEALTH_AND_WATER) {
+		if (ConsumeSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ConsumeSound, Consumer->GetActorLocation(), 1.5);
+		}
 		Consumer->AddStamina(AdditionToConsumer);
 		Consumer->AddHealth(AdditionToConsumer);
 		if (AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(Consumer)) {
@@ -49,6 +61,9 @@ void AConsumable::Consume(AKoalaBaseCharacter* Consumer)
 		}
 	}
 	else if (ItemType == EConsumableType::POOP) {
+		if (ConsumeSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), ConsumeSound, Consumer->GetActorLocation(), 1.5);
+		}
 		Consumer->AddStamina(AdditionToConsumer);
 		UGameplayStatics::ApplyDamage(Consumer, AdditionToConsumer, Consumer->GetController(), Consumer, UDamageType::StaticClass());
 	}

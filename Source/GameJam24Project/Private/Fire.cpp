@@ -46,6 +46,17 @@ void AFire::BeginPlay()
 	OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 	OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
+	if (FireSound) {
+		FTimerDelegate FireSoundDelegate;
+		FireSoundDelegate.BindLambda([&]() {
+			if (FireSound) {
+				UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, GetActorLocation());
+			}
+		});
+		GetWorldTimerManager().SetTimer(FireSoundTimer, FireSoundDelegate, MakeFireSoundEverySeconds, true);
+	}
+	
+	
 }
 
 // Called every frame
@@ -164,6 +175,11 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 		AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 		GameMode->FireActorsInLevel--;
 		UE_LOG(LogTemp, Warning, TEXT("Destroying FIRE"));
+		GetWorldTimerManager().ClearTimer(DamageTimer);
+		GetWorldTimerManager().ClearTimer(FireSoundTimer);
+		GetWorldTimerManager().ClearTimer(SpreadTimer);
+		GetWorldTimerManager().ClearTimer(CollisionUpdateTimer);
+		GetWorldTimerManager().ClearAllTimersForObject(this);
 		this->Destroy();
 	}
 }
@@ -258,11 +274,13 @@ void AFire::ApplyDamageTimer()
 	if (!KoalaBasePlayer) {
 		GetWorldTimerManager().ClearTimer(SpreadTimer);
 		GetWorldTimerManager().ClearTimer(DamageTimer);
+		GetWorldTimerManager().ClearTimer(FireSoundTimer);
 		return;
 	}
 	if (KoalaBasePlayer->IsDead()) {
 		GetWorldTimerManager().ClearTimer(SpreadTimer);
 		GetWorldTimerManager().ClearTimer(DamageTimer);
+		GetWorldTimerManager().ClearTimer(FireSoundTimer);
 		return;
 	}
 	for (int i = 0; i < Num; i++) {
@@ -270,6 +288,7 @@ void AFire::ApplyDamageTimer()
 			OverlapActors.Empty();
 			GetWorldTimerManager().ClearTimer(SpreadTimer);
 			GetWorldTimerManager().ClearTimer(DamageTimer);
+			GetWorldTimerManager().ClearTimer(FireSoundTimer);
 			return;
 		}
 		// UE_LOG(LogTemp, Warning, TEXT("%s"), *Actor->GetName());

@@ -26,6 +26,23 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditAnywhere, Category = "Gun Properties")
+	USoundBase* ShootSound;
+
+	UPROPERTY(EditAnywhere, Category = "Gun Properties")
+	USoundBase* HitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Gun Properties")
+	USoundBase* FireHitSound;
+
+	UPROPERTY(EditAnywhere, Category = "Gun Properties")
+	USoundBase* RefillSound;
+
+	UPROPERTY(EditAnywhere, Category = "Gun Properties")
+	USoundBase* StopShootSound;
+
+
+
 	UPROPERTY(EditAnywhere, Category="Gun Properties")
 	class USkeletalMeshComponent* MeshComponent;
 	

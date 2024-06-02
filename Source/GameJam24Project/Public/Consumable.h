@@ -46,6 +46,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Death")
 		UMaterialInterface* DeathMaterial;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* ConsumeSound;
+
 private:
 	float Health = 100.f;
 };

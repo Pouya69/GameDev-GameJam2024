@@ -23,7 +23,7 @@ EBTNodeResult::Type UBTTask_BabyDefaultBehaviour::ExecuteTask(UBehaviorTreeCompo
 	OwnerPawn->ChangeCharacterSpeed(false);
 	bool bAlreadyHasMovingLocation = BlackBoardComp->GetValueAsBool(FName("IsMovingToLocation"));
 	if (bAlreadyHasMovingLocation) {
-		return EBTNodeResult::Succeeded;
+		return EBTNodeResult::Failed;
 	}
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(this);
 	FNavLocation MoveLocationNav;
@@ -33,12 +33,12 @@ EBTNodeResult::Type UBTTask_BabyDefaultBehaviour::ExecuteTask(UBehaviorTreeCompo
 		BlackBoardComp->SetValueAsBool(FName("IsMovingToLocation"), true);
 		// DrawDebugSphere(GetWorld(), MoveLocationNav.Location, 20.f, 50, FColor::Red, true);
 		// UE_LOG(LogTemp, Warning, TEXT("Moving To: %s"), *MoveLocationNav.Location.ToCompactString());
-		OwnerAIController->MoveToLocation(MoveLocationNav.Location, DestinationAcceptableRadius);
+		// OwnerAIController->MoveToLocation(MoveLocationNav.Location, DestinationAcceptableRadius);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("Can't find a location"));
-		return EBTNodeResult::Failed;
+		return EBTNodeResult::Succeeded;
 	}
 
-	return EBTNodeResult::Succeeded;
+	return EBTNodeResult::Failed;
 }

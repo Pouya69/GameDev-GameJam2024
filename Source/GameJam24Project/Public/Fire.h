@@ -23,7 +23,11 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	USoundBase* FireSound;
 
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+	float MakeFireSoundEverySeconds = 0.2f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float TickDamage = 10.f;
@@ -90,6 +94,7 @@ private:
 	FTimerHandle SpreadTimer;
 	FTimerHandle DamageTimer;
 	FTimerHandle CollisionUpdateTimer;
+	FTimerHandle FireSoundTimer;
 	TArray<AActor*> OverlapActors;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")

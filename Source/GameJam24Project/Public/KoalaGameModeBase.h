@@ -71,7 +71,7 @@ public:
 	int FireActorsInLevel;
 	TArray<class AKoalaBabyCharacter*> BabyCharacters;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
-		int CreateFireEverySeconds = 3;
+		float CreateFireEverySeconds = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
 		int MaxFiresAllowed = 30;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
@@ -89,7 +89,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable Random Creation")
 		int MaxConsumablesAllowed = 10;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Consumable Random Creation")
-		int CreateConsumableEverySeconds = 3;
+		float CreateConsumableEverySeconds = 3;
 	void CreateConsumableRandom();
 protected:
 	// Called when the game starts or when spawned

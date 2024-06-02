@@ -37,7 +37,6 @@ public:
 
 	UCapsuleComponent* CapsuleComp;
 
-
 	UPROPERTY(EditAnywhere, Category = "Death")
 		UMaterialInterface* DeathMaterial;
 	UPROPERTY(EditAnywhere, Category = "Death")
@@ -55,10 +54,14 @@ public:
 	// Stamina and Health
 	UFUNCTION(BlueprintCallable)
 		bool IsCharacterMoving() const;
+	UPROPERTY(EditAnywhere, Category = "Stamina")
+		class UNiagaraComponent* NiagaraSleeping;
 	UFUNCTION(BlueprintCallable, Category = "Stamina")
 		float GetStamina() const { return Stamina; }
 	UPROPERTY(EditAnywhere, Category = "Stamina")
 		float StaminaDeductionRate = 5.f;
+	UPROPERTY(EditAnywhere, Category = "Stamina")
+		float StaminaDeductionRateRandomness = 1.f;
 	UPROPERTY(EditAnywhere, Category = "Stamina")
 		float StaminaDeductionMultiplierMoving = 1.3; // While moving it will be deducted 1.3X for example. Idle will be the same.
 	UPROPERTY(EditAnywhere, Category = "Stamina")
@@ -91,8 +94,6 @@ public:
 		bool IsDead() const { return bIsDead; }
 	UFUNCTION(BlueprintCallable)
 		void StopCharacterMovement();
-	
-	FTimerHandle SleepTimerHandle;
 
 public:
 	// Movement
@@ -101,6 +102,25 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Speeds")
 		float RunningSpeed = 200.f;
 	void ChangeCharacterSpeed(bool bShouldRun);
+	FRotator InitialMeshRotation;
+	void ResetCharacterMesh();
+
+public:
+	// Sound
+	float SoundPitches = 1.f;
+	// TODO: Walking nad climbing needs to be done in animations
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* JumpingSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* OnFireSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* DeathSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* SleepingSound;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+		float MakeSleepingSoundEverySeconds = 0.8f;
+	FTimerHandle SleepTimerHandle;
+	FTimerHandle SleepSoundTimerHandle;
 
 private:
 	/** Broadcasts whenever the layer changes */
