@@ -55,6 +55,7 @@ void AGun::PullTrigger()
 	// UE_LOG(LogTemp, Warning, TEXT("Ammo: %f"), Ammunition);
 	if(!Ammunition)
 	{
+		ReleaseTrigger();
 		return;
 	}
 	// GunBeamMesh->SetHiddenInGame(false);

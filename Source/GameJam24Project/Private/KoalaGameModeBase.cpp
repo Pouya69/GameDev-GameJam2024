@@ -84,7 +84,7 @@ void AKoalaGameModeBase::CreateFireRandom()
 	const float RadiusRandom = FMath::RandRange(MinBabyRadiusSpawnFire, MaxBabyRadiusSpawnFire);
 	AKoalaBabyCharacter* BabyCharacter = BabyCharacters[FMath::RandRange(0, BabyCharacters.Num() - 1)];
 	// UE_LOG(LogTemp, Warning, TEXT("Random Baby: %s"), *BabyCharacter->GetName());
-	const bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(BabyCharacter->GetActorLocation(), RadiusRandom, MoveLocationNav);
+	const bool bFoundLocation = NavSystem->GetRandomPointInNavigableRadius(BabyCharacter->GetActorLocation(), RadiusRandom, MoveLocationNav);
 	if (!bFoundLocation) return;
 	AFire* FireObjectSpawned = GetWorld()->SpawnActor<AFire>(FireClass, MoveLocationNav.Location, FRotator::ZeroRotator);
 	TArray<AActor*> OutActors;

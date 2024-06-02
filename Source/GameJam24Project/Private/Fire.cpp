@@ -233,7 +233,7 @@ void AFire::MakeFire(FVector Location)
 	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	NewBoxComp->SetHiddenInGame(false, true);
+	// NewBoxComp->SetHiddenInGame(false, true);
 	NewBoxComp->bMultiBodyOverlap = true;
 
 	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
