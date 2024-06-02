@@ -7,6 +7,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "KoalaBabyCharacter.h"
+#include "KismetAnimationLibrary.h"
 
 UBabyAnimInstance::UBabyAnimInstance()
 {
@@ -33,7 +34,7 @@ void UBabyAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	}
 	UPawnMovementComponent* MovementComp = OwnerPawn->GetMovementComponent();
 	CharacterSpeed = MovementComp->Velocity.Length();
-	CharacterDirection = CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
+	CharacterDirection = UKismetAnimationLibrary::CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
 	bIsFalling = MovementComp->IsFalling();
 	AAIController* MyAIController = Cast<AAIController>(OwnerPawn->GetController());
 	if (!MyAIController) {
