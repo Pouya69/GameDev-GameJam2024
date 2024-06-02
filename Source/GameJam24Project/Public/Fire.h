@@ -29,7 +29,7 @@ public:
 	float TickDamage = 10.f;
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
-	float SpreadTime = 3.f;
+	float SpreadTime = FMath::RandRange(3,10);
 
 	UPROPERTY(EditAnywhere, Category="Fire Properties")
 	float SplineTime = 3.f;

@@ -62,6 +62,36 @@ void AFire::SpreadFire()
 	if (GetRandomLocation(LocationToSpawnFrom)) {
 		SpawnFire(LocationToSpawnFrom);
 		
+	if(!Niagara || SpreadDirections.IsEmpty())
+	{
+		GetWorldTimerManager().ClearAllTimersForObject(this);
+		return;	
+	} 
+
+	FVector Start = GetActorLocation();
+	TArray<FHitResult> OutHitResults;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	TArray<FVector> HitVector;
+
+	for(auto End : SpreadDirections )
+	{
+		const bool bLineTraceHasHit = GetWorld()->LineTraceMultiByChannel(OutHitResults, Start,  End , ECollisionChannel::ECC_GameTraceChannel1, Params);
+		bool bShouldSpawn = true;
+		if(bLineTraceHasHit)
+		{
+			for (FHitResult HitResult : OutHitResults) {
+				
+				if (HitResult.GetActor()->IsA(FireClass)) {
+					HitVector.Add(End);
+					bShouldSpawn = false;
+					break;
+				}
+			}
+		}
+		if (bShouldSpawn) {
+			SpawnFire(End, HitVector);
+		}
 	}
 	SpawnProbability += IncrementProbabilityRate; */
 	
