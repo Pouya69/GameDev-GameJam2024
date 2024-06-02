@@ -3,6 +3,7 @@
 
 #include "BaseTree.h"
 #include "Consumable.h"
+#include "Components/SplineComponent.h"
 
 ABaseTree::ABaseTree()
 {
@@ -10,14 +11,35 @@ ABaseTree::ABaseTree()
 	PrimaryActorTick.bCanEverTick = true;
 	ConsumableSpawnLocation = CreateDefaultSubobject<USceneComponent>(FName("Consumable Spawn Location 1"));
 	ConsumableSpawnLocation2 = CreateDefaultSubobject<USceneComponent>(FName("Consumable Spawn Location 2"));
+	SplineComponent = CreateDefaultSubobject<USplineComponent>(FName("Spline Component"));
 	ConsumableSpawnLocation->SetupAttachment(BaseMeshComp);
 	ConsumableSpawnLocation2->SetupAttachment(BaseMeshComp);
+	SplineComponent->SetupAttachment(BaseMeshComp);
+
+	SplineComponent->ClearSplinePoints();
+	SplineComponent->AddSplinePoint(FVector::ZeroVector, ESplineCoordinateSpace::Local);
+	SplineComponent->AddSplinePoint(FVector(0,0,500), ESplineCoordinateSpace::Local);
+	
+	
 }
 
 // Called when the game starts or when spawned
 void ABaseTree::BeginPlay()
 {
 	Super::BeginPlay();
+
+	for (int32 i = 0; i < BranchNumber; i++)
+	{
+		if(USplineComponent* BranchSplineComponent = Cast<USplineComponent>(GetDefaultSubobjectByName(*FString::Printf(TEXT("Branch%d"), i))))
+		{
+			FVector Location = BranchSplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+			/* TODO: TArray creation logic
+			1. Not sure if Z calculation should go here or in fire.
+			*/
+			BranchesSplinesComponent.Add(TTuple<USplineComponent*, float>(BranchSplineComponent, Location.Z));
+		}
+		
+	}
 	
 }
 

@@ -57,6 +57,7 @@ void AKoalaGameModeBase::BeginPlay()
 	// Creating random fire actors
 	FTimerDelegate FireDelegate;
 	FireDelegate.BindLambda([&]() {
+		UE_LOG(LogTemp, Warning, TEXT("FireActorsInLevel: %d MaxFiresAllowed: %d"), FireActorsInLevel, MaxFiresAllowed);
 		if (FireActorsInLevel < MaxFiresAllowed) CreateFireRandom();
 	});
 
@@ -79,6 +80,7 @@ void AKoalaGameModeBase::BeginPlay()
 void AKoalaGameModeBase::CreateFireRandom()
 {
 	if (BabyCharacters.IsEmpty() || GetWorld() == nullptr) return;
+	
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation MoveLocationNav;
 	const float RadiusRandom = FMath::RandRange(MinBabyRadiusSpawnFire, MaxBabyRadiusSpawnFire);
@@ -87,11 +89,16 @@ void AKoalaGameModeBase::CreateFireRandom()
 	const bool bFoundLocation = NavSystem->GetRandomPointInNavigableRadius(BabyCharacter->GetActorLocation(), RadiusRandom, MoveLocationNav);
 	if (!bFoundLocation) return;
 	AFire* FireObjectSpawned = GetWorld()->SpawnActor<AFire>(FireClass, MoveLocationNav.Location, FRotator::ZeroRotator);
+	
 	TArray<AActor*> OutActors;
 	FireObjectSpawned->GetOverlappingActors(OutActors, FireClass);
 	if (!OutActors.IsEmpty()) {
 		FireObjectSpawned->Destroy();
 		return;
+	}
+	if (FireObjectSpawned)
+	{
+		FireActorsInLevel++;
 	}
 
 

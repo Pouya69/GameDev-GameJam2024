@@ -6,6 +6,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Components/BoxComponent.h"
+#include "Components/SplineComponent.h"
 #include "NiagaraComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -23,7 +24,7 @@
 AFire::AFire()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	// PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 	
 	SceneRootComp = CreateDefaultSubobject<USceneComponent>(TEXT("Scene Root Comp"));
 	SetRootComponent(SceneRootComp);
@@ -68,18 +69,18 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	UpdateBoxCollisions();
+	/* UpdateBoxCollisions();
 	if (GetRandomLocation(LocationToSpawnFrom)) {
 		SpawnFire(LocationToSpawnFrom);
 		
 	}
-	SpawnProbability += IncrementProbabilityRate;
+	SpawnProbability += IncrementProbabilityRate; */
 	
 }
 
 bool AFire::GetRandomLocation(FVector& OutLocation)
 {
-	FCollisionQueryParams Params;
+	/* FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	FHitResult HitResult;
 	const FVector SpawnLocFireExists = OutLocation + (FVector::UpVector * FireCreationUpwardsCheck);
@@ -114,7 +115,7 @@ bool AFire::GetRandomLocation(FVector& OutLocation)
 			OutLocation = GetActorLocation();
 			UE_LOG(LogTemp, Warning, TEXT("Reset"));
 		}
-	}
+	} */
 	/*
 	bool bIsOnTree = false;
 	for (const AActor* Actor : OverlapActors) {
@@ -187,6 +188,7 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 
 void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 {
+	UE_LOG(LogTemp, Warning, TEXT("Overlapping %s"), *OtherActor->GetName());
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
 	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass()) || OtherActor->IsA(AConsumable::StaticClass())) {
@@ -205,7 +207,13 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 		}
 	}
 	else if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
-		TreeObject->StartFire();
+		//InitializeSpline(TreeObject->SplineComponent);
+		InitializeSplines(TreeObject);
+		/* if(TargetSpline)
+		{
+			GetWorldTimerManager().SetTimer(SplineTimer, this, &AFire::FollowSpline, 1.f, true, 0.f);
+		} */
+		//TreeObject->StartFire();
 	}
 	else if (AConsumable* Consumable = Cast<AConsumable>(OtherActor)) {
 		if(!bTimerExists)
@@ -295,4 +303,140 @@ void AFire::ApplyDamageTimer()
 		UGameplayStatics::ApplyDamage(OverlapActors[i], TickDamage, KoalaBasePlayer->GetController(), KoalaBasePlayer, UDamageType::StaticClass());
 	}
 	
+}
+
+
+void AFire::TrunkSplineHandle(class USplineComponent* SplineComponent)
+{
+
+	FVector Start = SplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+	FVector End = SplineComponent->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
+	float Length = End.Z - Start.Z;
+	float ActorsNeeded = Length / CollisionBoxExtent;
+
+	float Delay = SplineComponent->Duration / ActorsNeeded;
+	// UE_LOG(LogTemp, Warning, TEXT("Length %f ActorsNeeded %f Delay %f"), Length, ActorsNeeded, Delay);
+
+	for(int i=1; i<=ActorsNeeded;i++)
+	{
+		CalculateSplineLocations(SplineComponent, SplineLocations, Delay * i);
+	}
+
+	
+	GetWorldTimerManager().SetTimer(SplineTimer,this, &AFire::SpawnTrunkActors, SpawnOnTreeDelay, true);
+
+}
+
+void AFire::BranchSplineHandle(class USplineComponent* SplineComponent)
+{
+	float Length = SplineComponent->GetSplineLength();
+	FVector Start = SplineComponent->GetLocationAtTime(0, ESplineCoordinateSpace::World, true);
+	FVector End = SplineComponent->GetLocationAtTime(SplineComponent->Duration, ESplineCoordinateSpace::World, true);
+	// UE_LOG(LogTemp, Warning, TEXT("Branch Length: %f | Calculated Length: %s"), Length, *(End - Start).ToString());
+	// Output: Branch Length: 240.000000 | Calculated Length: X=0.000 Y=240.000 Z=0.000. This means it is equal to length
+	float ActorsNeeded = Length / CollisionBoxExtent;
+
+	float Delay = SplineComponent->Duration / ActorsNeeded;
+
+	for(int i=1; i<=ActorsNeeded;i++)
+	{
+		/* TODO: fix to have different different indexes for different branches
+		1. zindex?
+		*/
+		CalculateSplineLocations(SplineComponent,BranchLocations, Delay * i);
+	}
+		
+	// GetWorld()->GetTimerManager().SetTimer(BranchTimerHandle,this, &AFire::SpawnBranchActors, SpawnOnTreeDelay, true);
+}
+
+
+
+
+void AFire::InitializeSplines(ABaseTree *Tree)
+{
+	bool bTreeHasBranches = Tree->BranchesSplinesComponent.Num() > 0;
+	bool bTreeHasTrunkSpline = Tree->SplineComponent != nullptr;
+
+	if (bTreeHasBranches)
+	{
+		/* TODO: Logic for branches
+		1. check when fire reaches Z axis of branch (should look if branch.Z is +- Fire.Z)
+		2. when reaches, start new timer for branch fire
+		*/
+		for (TTuple<USplineComponent*, float> Tuple : Tree->BranchesSplinesComponent)
+		{
+			USplineComponent* Branch = Tuple.Get<0>();
+			BranchSplineHandle(Branch);
+		}
+	}
+
+	if (bTreeHasTrunkSpline)
+	{
+		TrunkSplineHandle(Tree->SplineComponent);
+	}
+
+
+	
+
+}
+	
+
+void AFire::CalculateSplineLocations(USplineComponent *Spline, TArray<TTuple<FVector, FRotator>>& OutLocations, float Time)
+{
+	FVector SplineLocation = Spline->GetLocationAtTime(Time, ESplineCoordinateSpace::World, true);
+	FRotator SplineRotation = Spline->GetRotationAtTime(Time, ESplineCoordinateSpace::World);
+
+	OutLocations.Add(TTuple<FVector, FRotator>(SplineLocation, SplineRotation));
+}
+
+void AFire::SpawnTrunkActors()
+{
+	FVector LastUsedLocation = SpawnSplineActors(SplineLocations, SplineTimer);
+	bool bTreeHasBranches = BranchLocations.Num() > 0;
+	if (!bTreeHasBranches)
+	{
+		return;
+	}
+	bool bIsBranchLower = BranchLocations[0].Get<0>().Z < LastUsedLocation.Z;
+	UE_LOG(LogTemp, Warning, TEXT("BranchLocations[0].Get<0>().Z: %f - LastUsedLocation.Z: %f"), BranchLocations[0].Get<0>().Z, LastUsedLocation.Z);
+	if (bIsBranchLower)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("bIsBranchLower entered"));
+		if (!GetWorld()->GetTimerManager().IsTimerActive(BranchTimerHandle))
+		{
+			GetWorld()->GetTimerManager().SetTimer(BranchTimerHandle,this, &AFire::SpawnBranchActors, SpawnOnTreeDelay, true);
+		}
+	}
+	
+}
+
+void AFire::SpawnBranchActors()
+{
+	UE_LOG(LogTemp, Warning, TEXT("SpawnBranchActors called"));
+	SpawnSplineActors(BranchLocations, BranchTimerHandle);
+}
+
+FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations, FTimerHandle& ClearTimer)
+{
+	// UE_LOG(LogTemp, Warning, TEXT("Inside here locations num: %d"), OutLocations.Num());
+	if(OutLocations.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Deleting"));
+
+		GetWorldTimerManager().ClearTimer(ClearTimer);
+		return FVector::ZeroVector;
+	}
+
+	TTuple<FVector, FRotator> Location = OutLocations[0];
+	
+	// UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
+	AFire* NewFire = GetWorld()->SpawnActor<AFire>(FireClass, Location.Get<0>(), Location.Get<1>());
+	if(NewFire)
+	{
+		NewFire->SetActorEnableCollision(false);
+	}
+
+	OutLocations.RemoveAt(0);
+
+	return Location.Get<0>();
 }

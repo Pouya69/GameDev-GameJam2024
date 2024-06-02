@@ -4,6 +4,7 @@
 #include "PlayerAnimInstance.h"
 #include "KoalaPlayerCharacter.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include "KismetAnimationLibrary.h"
 
 UPlayerAnimInstance::UPlayerAnimInstance()
 {
@@ -26,7 +27,7 @@ void UPlayerAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	UPawnMovementComponent* MovementComp = OwnerPawn->GetMovementComponent();
 	// const FVector CharacterVel = MovementComp->Velocity;
 	CharacterSpeed = MovementComp->Velocity.Length();
-	OnGroundCharacterDirection = CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
+	OnGroundCharacterDirection = UKismetAnimationLibrary::CalculateDirection(MovementComp->Velocity, OwnerPawn->GetActorRotation());
 	bIsFalling = MovementComp->IsFalling();
 	bIsClimbingTree = OwnerPawn->bIsOnTree;
 	bIsSleeping = OwnerPawn->IsSleeping();

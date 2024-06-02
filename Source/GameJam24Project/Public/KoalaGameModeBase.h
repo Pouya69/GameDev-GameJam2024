@@ -73,7 +73,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
 		float CreateFireEverySeconds = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
-		int MaxFiresAllowed = 30;
+		int MaxFiresAllowed = 15;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
 		float MinBabyRadiusSpawnFire = 1000;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire Random Creation")
