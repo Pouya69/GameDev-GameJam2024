@@ -256,16 +256,19 @@ void AFire::ApplyDamageTimer()
 	const int Num = OverlapActors.Num();
 	AKoalaBaseCharacter* KoalaBasePlayer = Cast<AKoalaBaseCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	if (!KoalaBasePlayer) {
-		GetWorldTimerManager().ClearAllTimersForObject(this);
+		GetWorldTimerManager().ClearTimer(SpreadTimer);
+		GetWorldTimerManager().ClearTimer(DamageTimer);
 		return;
 	}
 	if (KoalaBasePlayer->IsDead()) {
-		GetWorldTimerManager().ClearAllTimersForObject(this);
+		GetWorldTimerManager().ClearTimer(SpreadTimer);
+		GetWorldTimerManager().ClearTimer(DamageTimer);
 		return;
 	}
 	for (int i = 0; i < Num; i++) {
 		if (!OverlapActors.IsValidIndex(i) || OverlapActors[i] == nullptr) {
 			OverlapActors.Empty();
+			GetWorldTimerManager().ClearTimer(SpreadTimer);
 			GetWorldTimerManager().ClearTimer(DamageTimer);
 			return;
 		}

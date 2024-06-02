@@ -3,6 +3,8 @@
 
 #include "BaseInteractableObject.h"
 #include "Consumable.h"
+#include "KoalaGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABaseInteractableObject::ABaseInteractableObject()
@@ -20,7 +22,7 @@ ABaseInteractableObject::ABaseInteractableObject()
 void ABaseInteractableObject::BeginPlay()
 {
 	Super::BeginPlay();
-
+	MGameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 	// TODO instanciate mesh and capsule collision here
 	
 }
@@ -29,6 +31,11 @@ void ABaseInteractableObject::BeginPlay()
 void ABaseInteractableObject::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (!MGameMode || MGameMode->bGameIsOver) {
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+		SetActorTickEnabled(false);
+		return;
+	}
 
 }
 

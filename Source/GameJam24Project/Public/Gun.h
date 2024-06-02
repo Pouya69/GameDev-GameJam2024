@@ -16,6 +16,7 @@ public:
 	AGun();
 
 	void PullTrigger();
+	void ReleaseTrigger();
 
 protected:
 	// Called when the game starts or when spawned
@@ -42,22 +43,41 @@ public:
 
 
 	UPROPERTY(EditAnywhere)
-	class UNiagaraSystem* Niagara;
+	class UNiagaraComponent* Niagara;
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraComponent* NiagaraEnd;
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* NiagaraHitObject;
+
+	UPROPERTY(EditAnywhere)
+	class UNiagaraSystem* NiagaraHitFire;
+
+	UPROPERTY(EditAnywhere)
+	UStaticMeshComponent* GunBeamMesh;
 
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* Root;
+
+	UPROPERTY(EditAnywhere)
+	FVector NotHittingScale3D;
+
+	FRotator InitialRotationBeam;
 
 	float GetAmmoLeft() const { return Ammunition; }
 
 	UFUNCTION()
 	void ReloadAmmunition();
 
+	class AKoalaPlayerCharacter* PlayerCharacter;
+
 private:
-	AController* GetOwnerController() const;
 	bool GunTrace(FHitResult& Hit);
 	float Ammunition = AmmunitionCapacity;
 
 	void SpawnEmitterJetEffect(const FVector& Start, const FVector& End);
+	
 	
 
 };

@@ -9,6 +9,9 @@
 #include "Engine/DamageEvents.h"
 #include "Kismet/GameplayStatics.h"
 #include "Fire.h"
+#include "KoalaPlayerCharacter.h"
+#include "Camera/CameraComponent.h"
+#include "Kismet/KismetMathLibrary.h"
 
 // Sets default values
 AGun::AGun()
@@ -19,9 +22,11 @@ AGun::AGun()
 	Root = CreateDefaultSubobject<USceneComponent>(TEXT("Root")); 
 	SetRootComponent(Root);
 
-
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(RootComponent);
+
+	GunBeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Beam"));
+	GunBeamMesh->SetupAttachment(MeshComponent);
 
 }
 
@@ -29,6 +34,10 @@ AGun::AGun()
 void AGun::BeginPlay()
 {
 	Super::BeginPlay();
+	Niagara = FindComponentByTag<UNiagaraComponent>(FName("StartEffect"));
+	NiagaraEnd = FindComponentByTag<UNiagaraComponent>(FName("EndEffect"));
+	NotHittingScale3D = GunBeamMesh->GetComponentScale();
+	InitialRotationBeam = Niagara->GetRelativeRotation();
 	
 }
 
@@ -43,24 +52,31 @@ void AGun::Tick(float DeltaTime)
 void AGun::PullTrigger()
 {
 	
-	UE_LOG(LogTemp, Warning, TEXT("Ammo: %f"), Ammunition);
+	// UE_LOG(LogTemp, Warning, TEXT("Ammo: %f"), Ammunition);
 	if(!Ammunition)
 	{
 		return;
 	}
-	
+	// GunBeamMesh->SetHiddenInGame(false);
+	Niagara->SetHiddenInGame(false);
 	Ammunition -= AmmoConsumeRate;
 	FHitResult HitResult;
-	AController* Controller = GetOwnerController();
 
 	// Uncomment this line when weapon ready and muzzle socket created on it
-	// FVector Start = GetMesh()->GetSocketLocation(FName("muzzle"));
-	FVector Start = GetActorLocation();
-	FVector End = Start + (Controller->GetControlRotation().Vector() * FireRange);
-	// SpawnEmitterJetEffect(Start, End);
-	DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.f);
+	FVector Start = MeshComponent->GetSocketLocation(FName("muzzle"));
+	FVector End = Start + (PlayerCharacter->PlayerController->GetControlRotation().Vector() * FireRange);
+	// DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.f);
+	// FVector BeamScale = NotHittingScale3D;
+	FRotator BeamRotation = InitialRotationBeam;
 	if(GunTrace(HitResult))
 	{
+		FVector NewEnd = HitResult.ImpactPoint;
+		
+		NiagaraEnd->SetWorldLocation(NewEnd);
+		
+		// BeamRotation = UKismetMathLibrary::GetDirectionUnitVector(Start, NewEnd).Rotation();
+		NiagaraEnd->SetHiddenInGame(false);
+		// BeamScale *= (FVector::Dist(Start, End) / FVector::Dist(Start, NewEnd));
 		//UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, HitResult.Location, ShotDirection.Rotation());
 		//UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ImpactSound, HitResult.Location);		
 		AActor* ResultActor = HitResult.GetActor();
@@ -71,11 +87,32 @@ void AGun::PullTrigger()
 			
 			// UGameplayStatics::ApplyDamage(ResultActor, Damage, nullptr, this, UDamageType::StaticClass());
 			if (AFire* FireObjectHit = Cast<AFire>(ResultActor)) {
+				if (NiagaraHitObject) {
+					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraHitFire, HitResult.ImpactPoint);
+				}
 				FireObjectHit->DestroyFire(HitResult.GetComponent());
+			}
+			else {
+				// UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraHitObject, HitResult.ImpactPoint);
 			}
 			
 		}
+		End = NewEnd;
 	}
+	else {
+		NiagaraEnd->SetHiddenInGame(true);
+	}
+	Niagara->SetRelativeRotation(BeamRotation);
+	// GunBeamMesh->SetWorldRotation(BeamRotation);
+	// GunBeamMesh->SetRelativeScale3D(BeamScale);
+	SpawnEmitterJetEffect(Start, End);
+}
+
+void AGun::ReleaseTrigger()
+{
+	GunBeamMesh->SetHiddenInGame(true);
+	Niagara->SetHiddenInGame(true);
+	NiagaraEnd->SetHiddenInGame(true);
 }
 
 
@@ -83,11 +120,8 @@ bool AGun::GunTrace(FHitResult& Hit)
 {
 	FVector PlayerLocation;
 	FRotator PlayerRotation;
-	AController* Controller = GetOwnerController();
-
-	if (Controller == nullptr) return false;
-	
-	Controller->GetPlayerViewPoint(PlayerLocation, PlayerRotation);
+	if (PlayerCharacter == nullptr) return false;
+	PlayerCharacter->PlayerController->GetPlayerViewPoint(PlayerLocation, PlayerRotation);
 	
 	FCollisionQueryParams params;
 	params.AddIgnoredActor(this);
@@ -102,28 +136,19 @@ bool AGun::GunTrace(FHitResult& Hit)
 
  void AGun::SpawnEmitterJetEffect(const FVector& Start, const FVector& End)
  {
-	if(Niagara)
+	/*if (Niagara)
 	{
-		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, Start);
+		UNiagaraComponent* NiagaraComponent = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), Niagara, GunBeamMesh->GetComponentLocation(), (End - Start).Rotation());
 		if(NiagaraComponent)
 		{
 			NiagaraComponent->SetVectorParameter(FName("BeamEnd"), End);
 		}
+		Niagara->SetHiddenInGame(false);
 	}
+	if (GunBeamMesh) {
+		GunBeamMesh->SetHiddenInGame(false);
+	}*/
  }
-
-
-
-AController* AGun::GetOwnerController() const
-{
-	APawn* OwnerPawn = Cast<APawn>(GetOwner());
-
-	if ( OwnerPawn == nullptr)
-	{
-		return nullptr;
-	}
-	return OwnerPawn -> GetController();
-}
 
 void AGun::ReloadAmmunition()
 {

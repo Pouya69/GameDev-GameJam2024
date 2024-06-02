@@ -66,6 +66,8 @@ public:
 	void CarryItemOnBack(AActor* ItemToCarry);
 	void DropCurrentCarriedItem();
 	void ReloadGun();
+	UPROPERTY()
+		class AGun* Gun;
 
 	
 
@@ -82,7 +84,8 @@ public:
 
 public:
 	// HUD and Widgets
-	class AKoalaGameModeBase* GameMode;
+	void RemoveAllPlayerWidgets();
+
 	UFUNCTION(BlueprintCallable)
 		void MakeStartingWidgets();
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -118,6 +121,7 @@ private:
 	void PickupAndCarryItem(const FInputActionValue& Value);
 	void PlayerJump(const FInputActionValue& Value);
 	void Shoot(const FInputActionValue& Value);
+	void StopShoot(const FInputActionValue& Value);
 
 private:
 	// Actions
@@ -135,8 +139,5 @@ private:
 		UInputAction* CarryItemAction;
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* ShootAction;
-
-	UPROPERTY()
-		class AGun* Gun;
 
 };

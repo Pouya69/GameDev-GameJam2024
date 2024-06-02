@@ -78,6 +78,7 @@ void ABaseTree::SpawnConsuamble()
 	FActorSpawnParameters SpawnParams;
 	AConsumable* ConsumableSpawned = GetWorld()->SpawnActor<AConsumable>(ConsumableClass, SpawnTransform);
 	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	ConsumableSpawned->BaseMeshComp->SetSimulatePhysics(false);
 	ConsumableSpawned->BaseMeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }

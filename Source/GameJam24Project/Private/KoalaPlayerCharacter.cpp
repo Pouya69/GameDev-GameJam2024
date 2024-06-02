@@ -33,8 +33,8 @@ AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 void AKoalaPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 	PlayerController = GetLocalViewingPlayerController();
+	RemoveAllPlayerWidgets();
 	MakeStartingWidgets();
 
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
@@ -47,6 +47,7 @@ void AKoalaPlayerCharacter::BeginPlay()
 		Gun = GetWorld()->SpawnActor<AGun>(GunClass);
 		Gun->AttachToComponent( GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("weapon_socket"));
 		Gun->SetOwner(this);
+		Gun->PlayerCharacter = this;
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("MESH: %S"), *GetMesh()->GetFullName());
@@ -86,15 +87,13 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
 		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Shoot);
+		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::None, this, &AKoalaPlayerCharacter::StopShoot);
 	}
 
 }
 
 void AKoalaPlayerCharacter::Die()
 {
-	// Destroy all the widgets
-	if (BasicPlayerWidget)	BasicPlayerWidget->RemoveFromParent();
-	if (ObjectivesWidget)	ObjectivesWidget->RemoveFromParent();
 	Super::Die();
 }
 
@@ -249,7 +248,11 @@ void AKoalaPlayerCharacter::Look(const FInputActionValue& Value)
 }
 
 void AKoalaPlayerCharacter::DetachFromCurrentTree() {
-	if (!bIsOnTree || CurrentClimbingTree == nullptr) return;
+	if (!bIsOnTree || CurrentClimbingTree == nullptr) {
+		bIsOnTree = false;
+		CurrentClimbingTree = nullptr;
+		return;
+	}
 	if (Gun) {
 		Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_socket"));
 	}
@@ -283,10 +286,17 @@ void AKoalaPlayerCharacter::UpdateKoalasAliveWidget()
 	BasicPlayerWidget->MakeKoalaItemsWidget();
 }
 
+void AKoalaPlayerCharacter::RemoveAllPlayerWidgets()
+{
+	// Destroy all the widgets
+	if (BasicPlayerWidget)	BasicPlayerWidget->RemoveFromParent();
+	if (ObjectivesWidget)	ObjectivesWidget->RemoveFromParent();
+}
+
 void AKoalaPlayerCharacter::MakeStartingWidgets()
 {
 	
-	if (ObjectivesWidgetClass) {
+	if (ObjectivesWidgetClass &&! GameMode->MissionObjectives.IsEmpty()) {
 		ObjectivesWidget = CreateWidget<UMissionObjectivesWidget>(PlayerController, ObjectivesWidgetClass);
 		ObjectivesWidget->AddToViewport();
 		ObjectivesWidget->MakeObjectivesWidget_Implementation();
@@ -403,4 +413,13 @@ void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
 		Gun->PullTrigger();
 	}
 	
+}
+
+void AKoalaPlayerCharacter::StopShoot(const FInputActionValue& Value)
+{
+	if (bIsOnTree) return;
+	if (Gun)
+	{
+		Gun->ReleaseTrigger();
+	}
 }

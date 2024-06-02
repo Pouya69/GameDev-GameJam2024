@@ -20,9 +20,10 @@ public:
 	UPROPERTY(VisibleAnywhere)
 		TArray<class ABaseTree*> TreesInLevel;
 	UPROPERTY(EditAnywhere)
-		TSubclassOf<class ABaseTree> TreeClass;
+		TArray<TSubclassOf<class ABaseTree>> TreeClasses;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		int BabyKoalasAlive;
+	int TotalBabyKoalasSinceStart;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		int MinBabyKoalasAliveNeeded = 2;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -38,16 +39,24 @@ public:
 	class AExtractionArea* ExtractionArea;
 
 	UFUNCTION()
-		void OnPlayerCharacterDeath();
+	void OnPlayerCharacterDeath();
 	UFUNCTION()
-		void OnBabyKoalaDeath();
-	void DisablePlayerInput();
+	void OnBabyKoalaDeath();
 
+	// End Game
+	UPROPERTY(EditAnywhere, BlueprintReadWRite, Category = "End Game")
+		bool bGameIsOver = true;
+	void DisablePlayerInputAndRemoveWidgets();
 	UFUNCTION(BlueprintCallable)
-		void GameOver(bool bWon, const FString& Message);
+		void GameOver(bool bWon, const FString& Message, int KoalasSaved = 0);
 	UFUNCTION(BlueprintCallable)
 		void EndGame();
-
+	UPROPERTY(EditAnywhere, Category = "End Game")
+		FString NextLevelName;
+	UPROPERTY(EditAnywhere, Category = "End Game")
+		TSubclassOf<class UEndGameOverWidget> GameOverWidgetClass;
+	UPROPERTY(VisibleAnywhere, Category = "End Game")
+		class UEndGameOverWidget* GameOverWidget;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Extraction")
 		int ExtractionTimeSinceStart;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Extraction")

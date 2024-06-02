@@ -9,6 +9,9 @@
 #include "Consumable.h"
 #include "KoalaPlayerCharacter.h"
 #include "Fire.h"
+#include "Gun.h"
+#include "KoalaGameModeBase.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -17,6 +20,7 @@ AKoalaBaseCharacter::AKoalaBaseCharacter()
 	// PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bCanEverTick = true;
 	CapsuleComp = Cast<UCapsuleComponent>(GetRootComponent());
+	
 	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel2, ECollisionResponse::ECR_Overlap);
 	
 	
@@ -29,14 +33,23 @@ void AKoalaBaseCharacter::BeginPlay()
 	//OnTakeAnyDamage.AddDynamic(this, &AKoalaBaseCharacter::DamageTakenHandle);
 	GetCharacterMovement()->MovementMode = EMovementMode::MOVE_Walking;
 	GetCharacterMovement()->MaxWalkSpeed = NormalSpeed;
-	
+	GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 }
 
 // Called every frame
 void AKoalaBaseCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bIsBeingCarried || bIsDead) return;  // Stamina will not reduce if it is being carried
+	if (!GameMode || GameMode->bGameIsOver || bIsBeingCarried || bIsDead) {
+		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+		SetActorTickEnabled(false);
+		return;
+	}  // Stamina will not reduce if it is being carried
+	if (bIsBeingCarried || bIsDead) {
+		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
+		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
+	}
 	if (Stamina <= 0) {
 		Sleep();
 		return;
@@ -47,22 +60,29 @@ void AKoalaBaseCharacter::Tick(float DeltaTime)
 
 }
 
-bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult) const
+bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult)
 {
 	bool bResult = GetObjectAround(OutHitResult, TreeDistanceCheck);
 	if (bResult) {
 		// To check if the hit actor was a tree specifically
+		UE_LOG(LogTemp, Warning, TEXT("Check: %s"), *OutHitResult.GetActor()->GetName());
 		bResult = OutHitResult.GetActor()->IsA(ABaseTree::StaticClass());
 	}
 	return bResult;
 }
 
-bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeCheck) const
+bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeCheck)
 {
 	FVector Start = GetActorLocation();
 	FVector End = Start + (RangeCheck * GetActorForwardVector());
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
+	if (AKoalaPlayerCharacter* PlayerChar = Cast<AKoalaPlayerCharacter>(this)) {
+		Params.AddIgnoredActor(PlayerChar->Gun);
+		if (PlayerChar->ItemCarriedOnBack != nullptr) {
+			Params.AddIgnoredActor(PlayerChar->ItemCarriedOnBack);
+		}
+	}
 	bool bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck), Params);
 	if (bResult) {
 		// To check whether the interacted object is the ABaseInteractableObject OR a character (baby koala for example)
@@ -131,8 +151,9 @@ void AKoalaBaseCharacter::Die()
 {
 	// TODO: Death stuff
 	// This line below alerts other listeners of the event that character has died
+	GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+	GetWorldTimerManager().ClearAllTimersForObject(this);
 	if (bIsDead) return;
-
 	// SetRootComponent(GetMesh());
 	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
@@ -181,20 +202,31 @@ void AKoalaBaseCharacter::AddStamina(float Amount)
 
 void AKoalaBaseCharacter::Sleep()
 {
-	if (IsSleeping() || IsDead()) return;  // Don't do anything if already sleeping or dead
-	GetWorldTimerManager().ClearTimer(SleepTimerHandle);  // Clear already existing timer just in case.
+	if (!GameMode || GameMode->bGameIsOver || IsSleeping() || IsDead()) {
+		GetWorldTimerManager().ClearAllTimersForObject(this);
+		return;
+	}
+	if (GetWorldTimerManager().TimerExists(SleepTimerHandle)) {
+		GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+		return;
+	}
 	FTimerDelegate TimerDelegate;
 	TimerDelegate.BindLambda([&]() {
-		if (!bIsDead) {
-			// Wake up after sleeping for X seconds
-			if (GetController()->IsPlayerController()) {
-				EnableInput(Cast<APlayerController>(GetController()));
+		if (GameMode && !GameMode->bGameIsOver) {
+			if (!bIsDead) {
+				// Wake up after sleeping for X seconds
+				if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
+					EnableInput((PlayerController));
+				}
+				bIsSleeping = false;
+				Stamina = StaminaAfterSleep;
+				// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 			}
-			bIsSleeping = false;
-			Stamina = StaminaAfterSleep;
-			// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 		}
 		
+		/*else {
+			GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+		}*/
 	});
 	if (GetController()->IsPlayerController()) {
 		DisableInput(Cast<APlayerController>(GetController()));

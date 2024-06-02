@@ -39,6 +39,6 @@ void AKoalaBabyCharacter::Die()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);*/
 	
 
-	GetController()->Destroy();
+	// GetController()->Destroy();
 	Super::Die();
 }

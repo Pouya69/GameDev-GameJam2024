@@ -33,6 +33,8 @@ public:
 
 	FOnDeath DeathEvent;
 
+	class AKoalaGameModeBase* GameMode;
+
 	UCapsuleComponent* CapsuleComp;
 
 
@@ -44,8 +46,8 @@ public:
 		TSubclassOf<class AFire> FireClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")
 		float TreeDistanceCheck = 100;
-	bool AreThereAnyTreesAround(FHitResult& OutHitResult) const;
-	bool GetObjectAround(FHitResult& OutHitResult, float RangeCheck) const;
+	bool AreThereAnyTreesAround(FHitResult& OutHitResult);
+	bool GetObjectAround(FHitResult& OutHitResult, float RangeCheck);
 
 	UFUNCTION(BlueprintCallable)
 		bool IsOnFire() const;
