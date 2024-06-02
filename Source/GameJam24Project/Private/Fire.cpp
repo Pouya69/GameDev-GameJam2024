@@ -69,12 +69,12 @@ void AFire::Tick(float DeltaTime)
 
 void AFire::SpreadFire()
 {
-	/* UpdateBoxCollisions();
+	UpdateBoxCollisions();
 	if (GetRandomLocation(LocationToSpawnFrom)) {
 		SpawnFire(LocationToSpawnFrom);
 		
 	}
-	SpawnProbability += IncrementProbabilityRate; */
+	SpawnProbability += IncrementProbabilityRate;
 	
 }
 
