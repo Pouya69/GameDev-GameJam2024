@@ -34,6 +34,8 @@ public:
 
 	APlayerController* PlayerController;
 
+	virtual void Die() override;
+
 
 public:
 	// Components
@@ -51,6 +53,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		FName ItemCarryBoneNameOnMesh;
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
+		FName ItemCarryBoneNameOnMeshWEAPON;
+	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		float InteractionRange = 100.f;
 	UPROPERTY(EditAnywhere, Category = "Interactions | Player")
 		float ItemLaunchForceAmount = 100.f;  // For launching the object IF we are doing it
@@ -62,6 +66,8 @@ public:
 	void CarryItemOnBack(AActor* ItemToCarry);
 	void DropCurrentCarriedItem();
 	void ReloadGun();
+	UPROPERTY()
+		class AGun* Gun;
 
 	
 
@@ -78,7 +84,8 @@ public:
 
 public:
 	// HUD and Widgets
-	class AKoalaGameModeBase* GameMode;
+	void RemoveAllPlayerWidgets();
+
 	UFUNCTION(BlueprintCallable)
 		void MakeStartingWidgets();
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Widgets")
@@ -99,13 +106,22 @@ public:
 
 	void UpdateKoalasAliveWidget();
 
+public:
+	// Animations
+	float ClimbingDir;
+
+	UPROPERTY(EditAnywhere, Category = "Animations | Locomotion")
+		UAnimMontage* TreeStartClimbingMontage;
+
 private:
 	void Move(const FInputActionValue& Value);
+	void NotMoving(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Interact(const FInputActionValue& Value);
 	void PickupAndCarryItem(const FInputActionValue& Value);
 	void PlayerJump(const FInputActionValue& Value);
 	void Shoot(const FInputActionValue& Value);
+	void StopShoot(const FInputActionValue& Value);
 
 private:
 	// Actions
@@ -123,8 +139,5 @@ private:
 		UInputAction* CarryItemAction;
 	UPROPERTY(EditAnywhere, Category = "Input")
 		UInputAction* ShootAction;
-
-	UPROPERTY()
-		class AGun* Gun;
 
 };

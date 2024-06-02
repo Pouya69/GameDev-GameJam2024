@@ -24,7 +24,7 @@ void AKoalaBabyCharacter::Tick(float DeltaTime)
 
 void AKoalaBabyCharacter::Die()
 {
-	// SetRootComponent(GetMesh());
+	/*// SetRootComponent(GetMesh());
 	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
 	// CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
@@ -33,12 +33,12 @@ void AKoalaBabyCharacter::Die()
 	
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->AddImpulse(DeathMeshImpulse);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	// GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
+	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);*/
 	
 
-	GetController()->Destroy();
+	// GetController()->Destroy();
 	Super::Die();
 }

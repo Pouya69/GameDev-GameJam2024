@@ -10,36 +10,48 @@
 #include "Fire.h"
 #include "NavigationSystem.h"
 #include "BaseTree.h"
+#include "EndGameOverWidget.h"
 
 void AKoalaGameModeBase::BeginPlay()
 {
+	
+	/*UGameplayStatics::GetAllActorsOfClass(GetWorld(), ObjectiveClass, FindActors);
+	if (!FindActors.IsEmpty()) {
+		for (AActor* Actor : FindActors) {
+			MissionObjectives.Add(Cast<AMissionObjective>(Actor));
+		}
+		FindActors.Empty();
+	}*/
+	if (GetWorld() == nullptr) {
+		return;
+	}
 	TArray<AActor*> FindActors;
 	PlayerCharacter = Cast<AKoalaPlayerCharacter>(UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
 	PlayerCharacter->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnPlayerCharacterDeath);
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ObjectiveClass, FindActors);
-	for (AActor* Actor : FindActors) {
-		MissionObjectives.Add(Cast<AMissionObjective>(Actor));
-	}
-	FindActors.Empty();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), BabyKoalaCharacterClass, FindActors);
-	for (AActor* Actor : FindActors) {
-		AKoalaBabyCharacter* BabyKoala = Cast<AKoalaBabyCharacter>(Actor);
-		BabyCharacters.Add(BabyKoala);
-		BabyKoala->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnBabyKoalaDeath);
-		BabyKoalasAlive++;
+	if (!FindActors.IsEmpty()) {
+		for (AActor* Actor : FindActors) {
+			AKoalaBabyCharacter* BabyKoala = Cast<AKoalaBabyCharacter>(Actor);
+			BabyCharacters.Add(BabyKoala);
+			BabyKoala->DeathEvent.AddDynamic(this, &AKoalaGameModeBase::OnBabyKoalaDeath);
+			BabyKoalasAlive++;
+		}
+		FindActors.Empty();
 	}
-	FindActors.Empty();
+	TotalBabyKoalasSinceStart = BabyKoalasAlive;
+	UE_LOG(LogTemp, Warning, TEXT("Total: %d"), TotalBabyKoalasSinceStart);
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), FireClass, FindActors);
 	if (!FindActors.IsEmpty()) {
 		FireActorsInLevel = FindActors.Num();
 	}
 	FindActors.Empty();
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), TreeClass, FindActors);
-	for (AActor* Actor : FindActors) {
-		TreesInLevel.Add(Cast<ABaseTree>(Actor));
+	for (TSubclassOf<ABaseTree> TreeClass : TreeClasses) {
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), TreeClass, FindActors);
+		for (AActor* Actor : FindActors) {
+			TreesInLevel.Add(Cast<ABaseTree>(Actor));
+		}
 	}
 	FindActors.Empty();
-
 	ExtractionArea = Cast<AExtractionArea>(UGameplayStatics::GetActorOfClass(GetWorld(), ExtractionAreaClass));
 	SetupTimerForEndGame();
 	// Creating random fire actors
@@ -48,21 +60,25 @@ void AKoalaGameModeBase::BeginPlay()
 		if (FireActorsInLevel < MaxFiresAllowed) CreateFireRandom();
 	});
 
-
-	// Creating random consumables
-	if (MaxConsumablesAllowed > TreesInLevel.Num()) MaxConsumablesAllowed = TreesInLevel.Num();  // No more than the amount of trees in level
-	FTimerDelegate ConsumableDelegate;
-	ConsumableDelegate.BindLambda([&]() {
-		if (ConsumablesInLevel < MaxConsumablesAllowed) CreateConsumableRandom();
-	});
 	GetWorldTimerManager().SetTimer(TimerHandleFireRandom, FireDelegate, CreateFireEverySeconds, true);
-	GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateFireEverySeconds, true);
+	// Creating random consumables
+	if (!TreesInLevel.IsEmpty()) {
+		if (MaxConsumablesAllowed > TreesInLevel.Num()) MaxConsumablesAllowed = TreesInLevel.Num();  // No more than the amount of trees in level
 
+		FTimerDelegate ConsumableDelegate;
+		ConsumableDelegate.BindLambda([&]() {
+			if (ConsumablesInLevel < MaxConsumablesAllowed) CreateConsumableRandom();
+			});
+		
+		GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateFireEverySeconds, true);
+	}
+	bGameIsOver = false;
 }
 
 
 void AKoalaGameModeBase::CreateFireRandom()
 {
+	if (BabyCharacters.IsEmpty() || GetWorld() == nullptr) return;
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation MoveLocationNav;
 	const float RadiusRandom = FMath::RandRange(MinBabyRadiusSpawnFire, MaxBabyRadiusSpawnFire);
@@ -85,7 +101,6 @@ void AKoalaGameModeBase::CreateFireRandom()
 
 void AKoalaGameModeBase::CreateConsumableRandom() {
 	for (ABaseTree* TreeObj : TreesInLevel) {
-		UE_LOG(LogTemp, Warning, TEXT("TREE: %s"), *TreeObj->GetName());
 		if (TreeObj->bCanSpawnFruit && !TreeObj->AlreadyHasConsumableOnTree()) {
 			TreeObj->SpawnConsuamble();
 			ConsumablesInLevel++;
@@ -115,14 +130,14 @@ bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMi
 
 void AKoalaGameModeBase::OnPlayerCharacterDeath()
 {
-	FString Message = FString("EVENT: You died...");
+	FString Message = FString("You died...");
 	GameOver(false, Message);
 }
 
 void AKoalaGameModeBase::OnBabyKoalaDeath()
 {
 	BabyKoalasAlive--;
-	UE_LOG(LogTemp, Warning, TEXT("A baby koala has died. Left: %d"), BabyKoalasAlive);
+	// UE_LOG(LogTemp, Warning, TEXT("A baby koala has died. Left: %d"), BabyKoalasAlive);
 	if (BabyKoalasAlive < MinBabyKoalasAliveNeeded) {
 		FString Message = FString("You have failed to rescue the koalas...");
 		GameOver(false, Message);
@@ -131,38 +146,62 @@ void AKoalaGameModeBase::OnBabyKoalaDeath()
 	PlayerCharacter->UpdateKoalasAliveWidget();
 }
 
-void AKoalaGameModeBase::DisablePlayerInput()
+void AKoalaGameModeBase::DisablePlayerInputAndRemoveWidgets()
 {
 	if (PlayerCharacter == nullptr) return;
-	
+	PlayerCharacter->RemoveAllPlayerWidgets();
 	PlayerCharacter->DisableInput(PlayerCharacter->PlayerController);
 	PlayerCharacter->SetActorTickEnabled(false);
 	PlayerCharacter->PlayerController->UnPossess();
 	
 }
 
-void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message)
+void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message, int KoalasSaved)
 {
-	DisablePlayerInput();
-	GetWorldTimerManager().ClearAllTimersForObject(this);
-	// TODO: Implement GameOver function
+	if (!BabyCharacters.IsEmpty()) {
+		for (AKoalaBabyCharacter* BabyChar : BabyCharacters) {
+			if (BabyChar != nullptr) {
+				BabyChar->Die();
+			}
+		}
+	}
+	
+	bGameIsOver = true;
+	PlayerCharacter->SetActorTickEnabled(false);
+	PlayerCharacter->DisableInput(PlayerCharacter->PlayerController);
+	DisablePlayerInputAndRemoveWidgets();
+	GetWorldTimerManager().ClearTimer(TimerHandleConsumablesRandom);
+	GetWorldTimerManager().ClearTimer(TimerHandleExtraction);
+	GetWorldTimerManager().ClearTimer(TimerHandleFireRandom);
+	
+	// GetWorldTimerManager().ClearAllTimersForObject(this);
+	
+	// if (PlayerCharacter->BasicPlayerWidget)	PlayerCharacter->BasicPlayerWidget->RemoveFromParent();
+	// if (PlayerCharacter->ObjectivesWidget)	PlayerCharacter->ObjectivesWidget->RemoveFromParent();
+	int Stars = 0;
 	if (bWon) {
-		// Won the level
+		Stars = KoalasSaved >= TotalBabyKoalasSinceStart ? 3 : (KoalasSaved == MinBabyKoalasAliveNeeded ? 1 : 2);
 	}
-	else {
-		// Lost the level
+	if (GameOverWidgetClass) {
+		GameOverWidget = CreateWidget<UEndGameOverWidget>(PlayerCharacter->PlayerController, GameOverWidgetClass, FName("Game Over Widget"));
+		if (GameOverWidget) {
+			PlayerCharacter->PlayerController->bShowMouseCursor = true;
+			GameOverWidget->BuildGameOverWidget(bWon, Message, NextLevelName, Stars);
+			GameOverWidget->AddToViewport();
+		}
 	}
-
 	UE_LOG(LogTemp, Warning, TEXT("GAME OVER: %s"), *Message);
+	
 }
 
 void AKoalaGameModeBase::EndGame()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Ending game..."), TimeLeftExtraction);
+	// UE_LOG(LogTemp, Warning, TEXT("Ending game..."), TimeLeftExtraction);
 
-	bool bWon;
+	bool bWon = false;
 	FString Message = FString("You failed to save the koalas..."); // By default
 	int KoalasSaved = ExtractionArea->GetBabyKoalasNumInArea();
+	UE_LOG(LogTemp, Warning, TEXT("Ending game... Koalas Saved: %d"), KoalasSaved);
 	if (!PlayerCharacter->IsDead() && KoalasSaved >= MinBabyKoalasAliveNeeded) {
 		bWon = true;
 		if (ExtractionArea->IsPlayerInArea()) {
@@ -171,16 +210,12 @@ void AKoalaGameModeBase::EndGame()
 		}
 		else {
 			// If everything is good but player is not in area themselves
-			Message = FString("You saved the babies, but you sacrificed yourself in the way...");
+			Message = FString("You saved the babies, but you were left out of the chopper...");
 		}
-		Message.Append(FString("Koalas saved: ") + FString::FromInt(KoalasSaved));
-	}
-	PlayerCharacter->SetActorTickEnabled(false);
-	if (APlayerController* PlayerController = Cast<APlayerController>(PlayerCharacter->GetController())) {
-		PlayerController->DisableInput(PlayerController);
+		// Message.Append(FString(" Koalas saved: ") + FString::FromInt(KoalasSaved));
 	}
 	
-	GameOver(false, Message);
+	GameOver(bWon, Message, KoalasSaved);
 }
 
 void AKoalaGameModeBase::SetupTimerForEndGame()

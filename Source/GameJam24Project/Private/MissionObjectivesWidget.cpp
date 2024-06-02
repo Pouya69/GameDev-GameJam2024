@@ -18,6 +18,7 @@ void UMissionObjectivesWidget::MakeObjectivesWidget_Implementation()
 {
 	AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetOwningPlayer()->GetWorld()));
 	CurrentObjectives.Empty();
+	if (GameMode->MissionObjectives.IsEmpty()) return;
 	for (AMissionObjective* Obj : GameMode->MissionObjectives) {
 		if (Obj->bIsObjectiveActive && !Obj->bIsObjectiveDone) {
 			CurrentObjectives.Add(Obj);

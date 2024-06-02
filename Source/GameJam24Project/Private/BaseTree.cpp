@@ -57,7 +57,7 @@ void ABaseTree::Interact()
 
 void ABaseTree::StartFire()
 {
-	if (bIsOnFire) return;  // If already on fire ignore
+	/*if (bIsOnFire) return;  // If already on fire ignore
 	bIsOnFire = true;
 	FTimerDelegate TreeFireDelegate;
 	TreeFireDelegate.BindLambda([&]() {
@@ -65,7 +65,7 @@ void ABaseTree::StartFire()
 		// TODO: Also have an end condition when the tree is fully on fire
 	});
 
-	GetWorldTimerManager().SetTimer(TreeFireTimer, TreeFireDelegate, ExpandFireEverySeconds, true);
+	GetWorldTimerManager().SetTimer(TreeFireTimer, TreeFireDelegate, ExpandFireEverySeconds, true);*/
 
 }
 
@@ -100,6 +100,7 @@ void ABaseTree::SpawnConsuamble()
 	FActorSpawnParameters SpawnParams;
 	AConsumable* ConsumableSpawned = GetWorld()->SpawnActor<AConsumable>(ConsumableClass, SpawnTransform);
 	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
+	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	ConsumableSpawned->BaseMeshComp->SetSimulatePhysics(false);
 	ConsumableSpawned->BaseMeshComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 }
