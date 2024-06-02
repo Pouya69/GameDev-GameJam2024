@@ -358,6 +358,7 @@ void AKoalaPlayerCharacter::PickupAndCarryItem(const FInputActionValue& Value)
 	}
 	FHitResult HitResult;
 	if (!GetObjectAround(HitResult, InteractionRange)) return;
+	UE_LOG(LogTemp, Warning, TEXT("Picking up: %s"), *HitResult.GetActor()->GetName());
 	AActor* InteractedActor = HitResult.GetActor();
 	// Accepted items that can be carried on the back are below
 	if (InteractedActor->IsA(AKoalaBaseCharacter::StaticClass()) || InteractedActor->IsA(AConsumable::StaticClass())) {

@@ -70,7 +70,7 @@ void AKoalaGameModeBase::BeginPlay()
 			if (ConsumablesInLevel < MaxConsumablesAllowed) CreateConsumableRandom();
 			});
 		
-		GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateFireEverySeconds, true);
+		GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateConsumableEverySeconds, true);
 	}
 	bGameIsOver = false;
 }
@@ -210,7 +210,7 @@ void AKoalaGameModeBase::EndGame()
 		}
 		else {
 			// If everything is good but player is not in area themselves
-			Message = FString("You saved the babies, but you were left out of the chopper...");
+			Message = FString("You saved the babies but you got left out...");
 		}
 		// Message.Append(FString(" Koalas saved: ") + FString::FromInt(KoalasSaved));
 	}
