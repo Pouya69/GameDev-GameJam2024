@@ -4,6 +4,7 @@
 #include "BaseTree.h"
 #include "Consumable.h"
 #include "Components/SplineComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 ABaseTree::ABaseTree()
 {
@@ -71,25 +72,46 @@ void ABaseTree::StartFire()
 
 bool ABaseTree::AlreadyHasConsumableOnTree() const
 {
-	bool bHasConsumable = false;
+	/*bool bHasConsumable = false;
 	FHitResult HitResult;
 	const FVector Loc1 = ConsumableSpawnLocation->GetComponentLocation();
 	const FCollisionShape CollisionShapeCheck = FCollisionShape::MakeSphere(ConsumableExistCheckRadius);
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(this);
 	bHasConsumable = GetWorld()->SweepSingleByChannel(HitResult, Loc1, Loc1, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, CollisionShapeCheck, Params);
+	
 	if (bHasConsumable) {
-		if (HitResult.GetActor()->IsA(AConsumable::StaticClass())) {
+		if (HitResult.GetActor()->IsA(ABaseTree::StaticClass())) {
+			Params.AddIgnoredActor(HitResult.GetActor());
+			bHasConsumable = GetWorld()->SweepSingleByChannel(HitResult, Loc1, Loc1, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, CollisionShapeCheck, Params);
+		}
+		if (bHasConsumable && HitResult.GetActor()->IsA(AConsumable::StaticClass())) {
 			return true;
 		}
 	}
 	const FVector Loc2 = ConsumableSpawnLocation2->GetComponentLocation();
 	bHasConsumable = GetWorld()->SweepSingleByChannel(HitResult, Loc2, Loc2, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, CollisionShapeCheck, Params);
 	if (bHasConsumable) {
-		if (HitResult.GetActor()->IsA(AConsumable::StaticClass())) {
+		if (HitResult.GetActor()->IsA(ABaseTree::StaticClass())) {
+			Params.AddIgnoredActor(HitResult.GetActor());
+			bHasConsumable = GetWorld()->SweepSingleByChannel(HitResult, Loc2, Loc2, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, CollisionShapeCheck, Params);
+		}
+		if (bHasConsumable && HitResult.GetActor()->IsA(AConsumable::StaticClass())) {
 			return true;
 		}
 	}
+	return false;*/
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AConsumable::StaticClass(), FoundActors);
+	if (FoundActors.IsEmpty()) return false;
+	for (AActor* FoundActor : FoundActors) {
+		if (FoundActor->IsOwnedBy(this)) {
+			UE_LOG(LogTemp, Warning, TEXT("FOUND fruit on %s"), *GetName());
+			return true;
+		}
+	}
+	// GetAllChildActors(FoundActors);
+	
 	return false;
 }
 
@@ -99,6 +121,7 @@ void ABaseTree::SpawnConsuamble()
 	SpawnTransform.SetScale3D(FVector(1, 1, 1));
 	FActorSpawnParameters SpawnParams;
 	AConsumable* ConsumableSpawned = GetWorld()->SpawnActor<AConsumable>(ConsumableClass, SpawnTransform);
+	ConsumableSpawned->SetOwner(this);
 	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	ConsumableSpawned->BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	ConsumableSpawned->BaseMeshComp->SetSimulatePhysics(false);

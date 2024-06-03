@@ -13,6 +13,7 @@
 #include "KoalaGameModeBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraComponent.h"
+#include "Components/AudioComponent.h"
 
 // Sets default values
 AKoalaBaseCharacter::AKoalaBaseCharacter()
@@ -49,7 +50,7 @@ void AKoalaBaseCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	if (!GameMode || GameMode->bGameIsOver || bIsDead) {
 		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
-		GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
+		// GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 		GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 		SetActorTickEnabled(false);
 		return;
@@ -67,9 +68,9 @@ void AKoalaBaseCharacter::Tick(float DeltaTime)
 
 }
 
-bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult)
+bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult, FCollisionQueryParams InParams)
 {
-	bool bResult = GetObjectAround(OutHitResult, TreeDistanceCheck);
+	bool bResult = GetObjectAround(OutHitResult, TreeDistanceCheck, InParams);
 	if (bResult) {
 		// To check if the hit actor was a tree specifically
 		UE_LOG(LogTemp, Warning, TEXT("Check: %s"), *OutHitResult.GetActor()->GetName());
@@ -78,24 +79,30 @@ bool AKoalaBaseCharacter::AreThereAnyTreesAround(FHitResult& OutHitResult)
 	return bResult;
 }
 
-bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeCheck)
+bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeCheck, FCollisionQueryParams InParams)
 {
-	FVector Start = GetActorLocation();
-	FVector End = Start + (RangeCheck * GetActorForwardVector());
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-	if (AKoalaPlayerCharacter* PlayerChar = Cast<AKoalaPlayerCharacter>(this)) {
-		Params.AddIgnoredActor(PlayerChar->Gun);
-		if (PlayerChar->ItemCarriedOnBack != nullptr) {
-			Params.AddIgnoredActor(PlayerChar->ItemCarriedOnBack);
+	FVector Start = GetActorLocation() + FVector::UpVector * RangeCheck;
+	FVector End = Start;
+	if (AKoalaPlayerCharacter* PlayerCharacterThis = Cast<AKoalaPlayerCharacter>(this)) {
+		InParams.AddIgnoredActor(PlayerCharacterThis->Gun);
+	}
+	// FVector End = Start + (RangeCheck * GetActorForwardVector());// + (-RangeCheck * GetActorUpVector());
+	InParams.AddIgnoredActor(this);
+	bool bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity,ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck),InParams);
+	if (!bResult) {
+		Start = GetActorLocation() + FVector::UpVector * RangeCheck;
+		End = Start + (RangeCheck * GetActorForwardVector());// + (-RangeCheck * GetActorUpVector());
+		bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity,ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck),InParams);
+		if (!bResult) {
+			Start = GetActorLocation();
+			End = Start + (RangeCheck * GetActorForwardVector());// + (-RangeCheck * GetActorUpVector());
+			bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity,ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck),InParams);
 		}
 	}
-	bool bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity, ECollisionChannel::ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck), Params);
 	if (bResult) {
 		// To check whether the interacted object is the ABaseInteractableObject OR a character (baby koala for example)
 		bResult = OutHitResult.GetActor()->IsA(ABaseInteractableObject::StaticClass()) || OutHitResult.GetActor()->IsA(ACharacter::StaticClass());
 	}
-
 	return bResult;
 }
 
@@ -162,21 +169,22 @@ void AKoalaBaseCharacter::Die()
 	if (DeathSound) {
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), DeathSound, GetActorLocation(), 1.5, SoundPitches);
 	}
+	NiagaraSleeping->SetHiddenInGame(true);
 	// This line below alerts other listeners of the event that character has died
 	GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
-	GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
+	// GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 	GetWorldTimerManager().ClearAllTimersForObject(this);
 	if (bIsDead) return;
 	// SetRootComponent(GetMesh());
 	CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
-	// CapsuleComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Ignore);
+	// CapsuleComp->SetCollisionResponseToChannel(Channel, ECollisionResponse::ECR_Ignore);
 	// CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	// CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
 
 	GetMesh()->SetSimulatePhysics(true);
 	GetMesh()->AddImpulse(DeathMeshImpulse);
-	// GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_GameTraceChannel1, ECollisionResponse::ECR_Block);
+	// GetMesh()->SetCollisionResponseToChannel(Channel, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldDynamic, ECollisionResponse::ECR_Block);
@@ -223,12 +231,18 @@ void AKoalaBaseCharacter::Sleep()
 	}
 	if (GetWorldTimerManager().TimerExists(SleepTimerHandle)) {
 		GetWorld()->GetTimerManager().ClearTimer(SleepTimerHandle);
-		GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
+		// GetWorld()->GetTimerManager().ClearTimer(SleepSoundTimerHandle);
 		return;
 	}
 	if (AKoalaPlayerCharacter* PlayerCharacter = Cast<AKoalaPlayerCharacter>(this)) {
 		PlayerCharacter->PlayerController->SetControlRotation(FRotator(-50, 0, 0));
 		DisableInput(PlayerCharacter->PlayerController);
+		if (PlayerCharacter->Gun->ShootWaterAudioComp) {
+			if (PlayerCharacter->Gun->ShootWaterAudioComp->IsActive()) {
+				PlayerCharacter->Gun->ShootWaterAudioComp->SetActive(false);
+			}
+		}
+		PlayerCharacter->Gun->ReleaseTrigger();
 		PlayerCharacter->DropCurrentCarriedItem();
 		PlayerCharacter->DetachFromCurrentTree();
 	}
@@ -249,7 +263,7 @@ void AKoalaBaseCharacter::Sleep()
 					NiagaraSleeping->SetHiddenInGame(true);
 				}
 				Stamina = StaminaAfterSleep;
-				GetWorldTimerManager().ClearTimer(SleepSoundTimerHandle);
+				// GetWorldTimerManager().ClearTimer(SleepSoundTimerHandle);
 				// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
 			}
 		}
@@ -258,20 +272,25 @@ void AKoalaBaseCharacter::Sleep()
 			GetWorldTimerManager().ClearTimer(SleepTimerHandle);
 		}*/
 	});
-	if (SleepingSound) {
+	/*if (SleepingSound) {
 		FTimerDelegate TimerDelegateSleepingSound;
 		TimerDelegateSleepingSound.BindLambda([&]() {
 			if (GameMode && !GameMode->bGameIsOver) {
 				if (!bIsDead && !IsOnFire()) {
 					if (SleepingSound) {
-						UGameplayStatics::PlaySoundAtLocation(GetWorld(), SleepingSound, GetActorLocation(), 1.5, SoundPitches);
+						if (IsA(AKoalaPlayerCharacter::StaticClass())) {
+							UGameplayStatics::PlaySound2D(GetWorld(), SleepingSound, 1.5, SoundPitches);
+						}
+						else {
+							UGameplayStatics::PlaySoundAtLocation(GetWorld(), SleepingSound, GetActorLocation(), 1.5, SoundPitches);
+						}
 					}
 				}
 				
 			}
 		});
-		GetWorldTimerManager().SetTimer(SleepSoundTimerHandle, TimerDelegateSleepingSound, MakeSleepingSoundEverySeconds, true);
-	}
+		GetWorldTimerManager().SetTimer(SleepSoundTimerHandle, TimerDelegateSleepingSound, MakeSleepingSoundEverySeconds, true, 0);
+	}*/
 	
 	// UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
 	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);

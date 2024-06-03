@@ -11,6 +11,8 @@
 #include "NavigationSystem.h"
 #include "BaseTree.h"
 #include "EndGameOverWidget.h"
+#include "Components/AudioComponent.h"
+
 
 void AKoalaGameModeBase::BeginPlay()
 {
@@ -57,7 +59,7 @@ void AKoalaGameModeBase::BeginPlay()
 	// Creating random fire actors
 	FTimerDelegate FireDelegate;
 	FireDelegate.BindLambda([&]() {
-		UE_LOG(LogTemp, Warning, TEXT("FireActorsInLevel: %d MaxFiresAllowed: %d"), FireActorsInLevel, MaxFiresAllowed);
+		// UE_LOG(LogTemp, Warning, TEXT("FireActorsInLevel: %d MaxFiresAllowed: %d"), FireActorsInLevel, MaxFiresAllowed);
 		if (FireActorsInLevel < MaxFiresAllowed) CreateFireRandom();
 	});
 
@@ -74,6 +76,10 @@ void AKoalaGameModeBase::BeginPlay()
 		GetWorldTimerManager().SetTimer(TimerHandleConsumablesRandom, ConsumableDelegate, CreateConsumableEverySeconds, true);
 	}
 	bGameIsOver = false;
+	if (AtmosphereSound) {
+		AtmosphereSoundComp = UGameplayStatics::SpawnSound2D(GetWorld(), AtmosphereSound);
+	}
+	
 }
 
 
@@ -107,12 +113,12 @@ void AKoalaGameModeBase::CreateFireRandom()
 
 
 void AKoalaGameModeBase::CreateConsumableRandom() {
-	for (ABaseTree* TreeObj : TreesInLevel) {
-		if (TreeObj->bCanSpawnFruit && !TreeObj->AlreadyHasConsumableOnTree()) {
-			TreeObj->SpawnConsuamble();
-			ConsumablesInLevel++;
-			break;
-		}
+	if (TreesInLevel.IsEmpty()) return;
+	const int i = FMath::RandRange(0, TreesInLevel.Num()-1);
+	ABaseTree* TreeObj = TreesInLevel[i];
+	if (TreeObj->bCanSpawnFruit && !TreeObj->AlreadyHasConsumableOnTree()) {
+		TreeObj->SpawnConsuamble();
+		ConsumablesInLevel++;
 	}
 	// TreesInLevel[FMath::RandRange(0, TreesInLevel.Num()-1)]->SpawnConsuamble();
 }
@@ -180,7 +186,9 @@ void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message, int KoalasS
 	GetWorldTimerManager().ClearTimer(TimerHandleConsumablesRandom);
 	GetWorldTimerManager().ClearTimer(TimerHandleExtraction);
 	GetWorldTimerManager().ClearTimer(TimerHandleFireRandom);
-	
+	if (AtmosphereSoundComp) {
+		AtmosphereSoundComp->SetActive(false);
+	}
 	// GetWorldTimerManager().ClearAllTimersForObject(this);
 	
 	// if (PlayerCharacter->BasicPlayerWidget)	PlayerCharacter->BasicPlayerWidget->RemoveFromParent();

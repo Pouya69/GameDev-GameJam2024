@@ -36,6 +36,9 @@ public:
 	UFUNCTION()
 		void DestroyItemHandleFire(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);  // For example when the item gets set on fire?
 	
+	UPROPERTY(EditAnywhere, Category = "Effects")
+		class UNiagaraComponent* NiagaraEffect;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
 		float AdditionToConsumer = 20.f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player")
@@ -48,6 +51,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
 		USoundBase* ConsumeSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* DestroySound;
 
 private:
 	float Health = 100.f;

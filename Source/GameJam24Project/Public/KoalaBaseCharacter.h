@@ -45,8 +45,8 @@ public:
 		TSubclassOf<class AFire> FireClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Interaction | Trees")
 		float TreeDistanceCheck = 100;
-	bool AreThereAnyTreesAround(FHitResult& OutHitResult);
-	bool GetObjectAround(FHitResult& OutHitResult, float RangeCheck);
+	bool AreThereAnyTreesAround(FHitResult& OutHitResult, FCollisionQueryParams InParams = FCollisionQueryParams());
+	bool GetObjectAround(FHitResult& OutHitResult, float RangeCheck , FCollisionQueryParams InParams = FCollisionQueryParams());
 
 	UFUNCTION(BlueprintCallable)
 		bool IsOnFire() const;
@@ -117,6 +117,8 @@ public:
 		USoundBase* DeathSound;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
 		USoundBase* SleepingSound;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Sound")
+		USoundBase* PickupSound;
 	UPROPERTY(EditAnywhere, Category = "Sound")
 		float MakeSleepingSoundEverySeconds = 0.8f;
 	FTimerHandle SleepTimerHandle;

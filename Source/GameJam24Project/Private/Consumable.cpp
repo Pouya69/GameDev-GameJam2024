@@ -6,11 +6,14 @@
 #include "KoalaPlayerCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "KoalaGameModeBase.h"
+#include "NiagaraComponent.h"
 
 AConsumable::AConsumable()
 {
 	BaseMeshComp->SetSimulatePhysics(true);
 	BaseMeshComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
+	NiagaraEffect = CreateDefaultSubobject<UNiagaraComponent>(FName("Effect"));
+	NiagaraEffect->SetupAttachment(BaseMeshComp);
 }
 
 void AConsumable::BeginPlay()
@@ -82,8 +85,12 @@ void AConsumable::DestroyItemHandleFire(AActor* DamagedActor, float Damage, cons
 		if (DeathMaterial) {
 			BaseMeshComp->SetMaterial(0, DeathMaterial);
 		}
+		if (DestroySound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DestroySound, GetActorLocation());
+		}
 		AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 		GameMode->ConsumablesInLevel--;
+		// Destroy();
 	}
-	// Destroy();
+	
 }

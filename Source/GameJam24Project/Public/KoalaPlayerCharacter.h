@@ -122,6 +122,7 @@ private:
 	void PlayerJump(const FInputActionValue& Value);
 	void Shoot(const FInputActionValue& Value);
 	void StopShoot(const FInputActionValue& Value);
+	void StopShootNotPressed(const FInputActionValue& Value);
 
 private:
 	// Actions

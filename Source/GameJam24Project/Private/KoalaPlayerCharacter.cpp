@@ -19,6 +19,7 @@
 #include "Gun.h"
 #include "Kismet/GameplayStatics.h"
 #include "KoalaGameModeBase.h"
+#include "Components/AudioComponent.h"
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -61,7 +62,9 @@ void AKoalaPlayerCharacter::Tick(float DeltaTime)
 		/*if (AKoalaBabyCharacter* KoalaCharacter = Cast<AKoalaBabyCharacter>(ItemCarriedOnBack)) {
 			// KoalaCharacter->GetMesh()->Location
 		}*/
-		ItemCarriedOnBack->SetActorTransform(GetMesh()->GetSocketTransform(ItemCarryBoneNameOnMesh));
+		const FVector Loc = GetMesh()->GetSocketLocation(ItemCarryBoneNameOnMesh);
+		const FRotator Rot = GetMesh()->GetSocketRotation(ItemCarryBoneNameOnMesh);
+		ItemCarriedOnBack->SetActorLocationAndRotation(Loc, Rot);
 		// ItemCarriedOnBack
 	}
 	/*if (bIsOnTree) {
@@ -86,13 +89,20 @@ void AKoalaPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		EnhancedPlayerInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::Interact);
 		EnhancedPlayerInputComponent->BindAction(CarryItemAction, ETriggerEvent::Started, this, &AKoalaPlayerCharacter::PickupAndCarryItem);
 		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &AKoalaPlayerCharacter::Shoot);
-		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::None, this, &AKoalaPlayerCharacter::StopShoot);
+		// EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::None, this, &AKoalaPlayerCharacter::StopShootNotPressed);
+		EnhancedPlayerInputComponent->BindAction(ShootAction, ETriggerEvent::Completed, this, &AKoalaPlayerCharacter::StopShoot);
 	}
 
 }
 
 void AKoalaPlayerCharacter::Die()
 {
+	if (Gun->ShootWaterAudioComp) {
+		if (Gun->ShootWaterAudioComp->IsActive()) {
+			Gun->ShootWaterAudioComp->SetActive(false);
+		}
+	}
+	Gun->ReleaseTrigger();
 	Super::Die();
 }
 
@@ -184,7 +194,7 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 			CurrentTreeLocation.Z = GetActorLocation().Z;
 			FVector ActorRightTargetLocation = GetActorLocation() + (Input.X * (TreeClimbingSpeed*3) * MovementDirection);
 			FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, ActorRightTargetLocation);
-			FVector TargetLocation = CurrentTreeLocation + (Direction * TreeAttachmentRadius);
+			FVector TargetLocation = CurrentTreeLocation + (Direction * (TreeAttachmentRadius+CurrentClimbingTree->ClimbingExtraRadius));
 			SetActorLocation(TargetLocation, true);
 			FRotator FinalRotation = (-1 * Direction).Rotation();
 			FinalRotation.Pitch = GetControlRotation().Pitch;
@@ -212,7 +222,7 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 			CurrentTreeLocation.Z = GetActorLocation().Z;
 			FVector ActorUpTargetLocation = GetActorLocation() + (Input.Y * (TreeClimbingSpeed * 3) * MovementDirection);
 			FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, ActorUpTargetLocation);
-			FVector TargetLocation = CurrentTreeLocation + (Direction * TreeAttachmentRadius);
+			FVector TargetLocation = CurrentTreeLocation + (Direction * (TreeAttachmentRadius + CurrentClimbingTree->ClimbingExtraRadius));
 			SetActorLocation(TargetLocation, true);
 			FRotator FinalRotation = (-1 * Direction).Rotation();
 			FinalRotation.Pitch = GetControlRotation().Pitch;
@@ -257,7 +267,7 @@ void AKoalaPlayerCharacter::DetachFromCurrentTree() {
 		Gun->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("weapon_socket"));
 	}
 	if (JumpingSound) {
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpingSound, GetActorLocation(), SoundPitches);
+		UGameplayStatics::PlaySound2D(GetWorld(), JumpingSound, SoundPitches);
 	}
 	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);  // Character will go back to normal movement mode
 	// Super::Jump();
@@ -317,18 +327,28 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	// This Interact function is for picking things up, interacting with objects using the USE KEY
 	// This is more optimized I think.
 	FHitResult HitResult;
-	if (!GetObjectAround(HitResult, InteractionRange)) return;
-
-	if (ABaseTree* TreeObject = Cast<ABaseTree>(HitResult.GetActor())) {
-		// NOTE: This is just an example. The tree attachment is on PlayerJump already
-		UE_LOG(LogTemp, Warning, TEXT("Tree Interacted"));
+	FCollisionQueryParams Params;
+	float NewRange = InteractionRange;
+	if (bIsOnTree) {
+		NewRange *= 1.2;
+		Params.AddIgnoredActor(CurrentClimbingTree);
 	}
-	else if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
+	if (ItemCarriedOnBack) {
+		Params.AddIgnoredActor(ItemCarriedOnBack);
+	}
+	if (!GetObjectAround(HitResult, NewRange, Params)) return;
+	if (HitResult.GetActor()->IsA(ABaseTree::StaticClass())) {
+		Params.AddIgnoredActor(HitResult.GetActor());
+		if (!GetObjectAround(HitResult, NewRange, Params)) return;
+	}
+	if (HitResult.GetActor()->IsA(AKoalaBabyCharacter::StaticClass())) {
+		Params.AddIgnoredActor(HitResult.GetActor());
+		if (!GetObjectAround(HitResult, NewRange, Params)) return;
+	}
+	UE_LOG(LogTemp, Warning, TEXT("Interacted With: %s"), *HitResult.GetActor()->GetName());
+	if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
 		Super::ConsumeItem(Consumable);
-
-		// TODO This is temporary! Cannot operate on something that will affect this class from the parent.
 	}
-
 
 
 
@@ -356,17 +376,33 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 void AKoalaPlayerCharacter::PickupAndCarryItem(const FInputActionValue& Value)
 {
 	if (IsCarryingItem()) {
+		if (PickupSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickupSound, ItemCarriedOnBack->GetActorLocation());
+		}
 		DropCurrentCarriedItem();
 		return;
 	}
+	if (bIsOnTree) return;
 	FHitResult HitResult;
-	if (!GetObjectAround(HitResult, InteractionRange)) return;
+	FCollisionQueryParams Params;
+	if (ItemCarriedOnBack) {
+		Params.AddIgnoredActor(ItemCarriedOnBack);
+	}
+	if (!GetObjectAround(HitResult, InteractionRange, Params)) return;
+	if (HitResult.GetActor()->IsA(ABaseTree::StaticClass())) {
+		Params.AddIgnoredActor(HitResult.GetActor());
+		if (!GetObjectAround(HitResult, InteractionRange, Params)) return;
+	}
 	UE_LOG(LogTemp, Warning, TEXT("Picking up: %s"), *HitResult.GetActor()->GetName());
 	AActor* InteractedActor = HitResult.GetActor();
 	// Accepted items that can be carried on the back are below
 	if (InteractedActor->IsA(AKoalaBaseCharacter::StaticClass()) || InteractedActor->IsA(AConsumable::StaticClass())) {
 		CarryItemOnBack(InteractedActor);
+		if (PickupSound) {
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickupSound, InteractedActor->GetActorLocation());
+		}
 	}
+	
 }
 
 void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
@@ -378,6 +414,10 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		return;
 	}
 	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	if (IsCarryingItem()) {
+		Params.AddIgnoredActor(ItemCarriedOnBack);
+	}
 	if (AreThereAnyTreesAround(HitResult)) {
 		/*if (TreeStartClimbingMontage) {
 			DisableInput(PlayerController);
@@ -392,7 +432,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
 		CurrentTreeLocation.Z = GetActorLocation().Z;
 		FVector Direction = UKismetMathLibrary::GetDirectionUnitVector(CurrentTreeLocation, GetActorLocation());
-		FVector TargetLocation = CurrentTreeLocation + (Direction *TreeAttachmentRadius);
+		FVector TargetLocation = CurrentTreeLocation + (Direction * (TreeAttachmentRadius+ CurrentClimbingTree->ClimbingExtraRadius));
 		// Player will face the tree
 		GetCharacterMovement()->StopMovementImmediately();
 		SetActorLocation(TargetLocation);
@@ -400,11 +440,17 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);  // To allow the character to go up and down freely
 		bIsOnTree = true;  // It is set in Anim Montage
 		GetCharacterMovement()->bOrientRotationToMovement = false;
+		if (JumpingSound) {
+			UGameplayStatics::PlaySound2D(GetWorld(), JumpingSound, SoundPitches);
+		}
 		return;
 	}
-	if (JumpingSound) {
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), JumpingSound, GetActorLocation(), SoundPitches);
+	if (!GetCharacterMovement()->IsFalling()) {
+		if (JumpingSound) {
+			UGameplayStatics::PlaySound2D(GetWorld(), JumpingSound, SoundPitches);
+		}
 	}
+	
 	
 	
 
@@ -424,6 +470,22 @@ void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::StopShoot(const FInputActionValue& Value)
 {
+	if (bIsOnTree) return;
+	if (Gun)
+	{
+		if (Gun->ShootWaterAudioComp) {
+			if (Gun->ShootWaterAudioComp->IsActive()) {
+				Gun->ShootWaterAudioComp->SetActive(false);
+			}
+		}
+		Gun->ReleaseTrigger();
+	}
+}
+
+void AKoalaPlayerCharacter::StopShootNotPressed(const FInputActionValue& Value)
+{
+	if (GameMode->bGameIsOver) return;
+	if (IsDead()) return;
 	if (bIsOnTree) return;
 	if (Gun)
 	{

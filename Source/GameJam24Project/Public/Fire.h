@@ -24,7 +24,12 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
+		USoundBase* FirePutoutSound;
+
+	UPROPERTY(EditAnywhere, Category = "Fire Properties")
 	USoundBase* FireSound;
+
+	UAudioComponent* FireSoundComp;
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
 	float MakeFireSoundEverySeconds = 0.2f;
@@ -102,7 +107,7 @@ public:
 	void InitializeSplines(class ABaseTree* Tree);
 
 private:
-	void MakeFire(FVector Location);
+	void MakeFire(FVector Location, FRotator Rotation = FRotator::ZeroRotator);
 	bool bIsCheckingOnTree = false;
 	FVector LocationToSpawnFrom;
 	FTimerHandle SpreadTimer;

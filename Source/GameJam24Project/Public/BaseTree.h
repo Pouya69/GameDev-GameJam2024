@@ -37,6 +37,8 @@ public:
 		int ExpandFireEverySeconds;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fire")
 		int TreeFireDamage;
+	UPROPERTY(EditAnywhere, Category="Player")
+		float ClimbingExtraRadius = 0.f;
 
 	UPROPERTY(EditAnywhere, Category = "Spline")
 		class USplineComponent* SplineComponent;

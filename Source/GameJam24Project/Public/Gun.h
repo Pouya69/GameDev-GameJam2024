@@ -26,6 +26,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bIsShooting = false;
+
 	UPROPERTY(EditAnywhere, Category = "Gun Properties")
 	USoundBase* ShootSound;
 
@@ -33,13 +36,12 @@ public:
 	USoundBase* HitSound;
 
 	UPROPERTY(EditAnywhere, Category = "Gun Properties")
-	USoundBase* FireHitSound;
-
-	UPROPERTY(EditAnywhere, Category = "Gun Properties")
 	USoundBase* RefillSound;
 
 	UPROPERTY(EditAnywhere, Category = "Gun Properties")
 	USoundBase* StopShootSound;
+
+	UAudioComponent* ShootWaterAudioComp;
 
 
 
@@ -70,9 +72,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	class UNiagaraSystem* NiagaraHitFire;
-
-	UPROPERTY(EditAnywhere)
-	UStaticMeshComponent* GunBeamMesh;
 
 	UPROPERTY(EditAnywhere)
 	class USceneComponent* Root;

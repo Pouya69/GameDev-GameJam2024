@@ -12,6 +12,7 @@
 #include "KoalaPlayerCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Components/AudioComponent.h"
 
 // Sets default values
 AGun::AGun()
@@ -25,9 +26,6 @@ AGun::AGun()
 	MeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	MeshComponent->SetupAttachment(RootComponent);
 
-	GunBeamMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Beam"));
-	GunBeamMesh->SetupAttachment(MeshComponent);
-
 }
 
 // Called when the game starts or when spawned
@@ -36,8 +34,12 @@ void AGun::BeginPlay()
 	Super::BeginPlay();
 	Niagara = FindComponentByTag<UNiagaraComponent>(FName("StartEffect"));
 	NiagaraEnd = FindComponentByTag<UNiagaraComponent>(FName("EndEffect"));
-	NotHittingScale3D = GunBeamMesh->GetComponentScale();
 	InitialRotationBeam = Niagara->GetRelativeRotation();
+	ShootWaterAudioComp = UGameplayStatics::SpawnSoundAttached(ShootSound, MeshComponent, FName("muzzle"), FVector(), EAttachLocation::KeepRelativeOffset, false, 1, 1, 0, nullptr, nullptr, false);
+	if (ShootWaterAudioComp) {
+		ShootWaterAudioComp->SetActive(false);
+	}
+	ReleaseTrigger();
 	
 }
 
@@ -55,6 +57,11 @@ void AGun::PullTrigger()
 	// UE_LOG(LogTemp, Warning, TEXT("Ammo: %f"), Ammunition);
 	if(!Ammunition)
 	{
+		if (ShootWaterAudioComp != nullptr) {
+			if (ShootWaterAudioComp->IsActive()) {
+				ShootWaterAudioComp->SetActive(false);
+			}
+		}
 		ReleaseTrigger();
 		return;
 	}
@@ -69,9 +76,16 @@ void AGun::PullTrigger()
 	// DrawDebugLine(GetWorld(), Start, End, FColor::Blue, false, 1.f);
 	// FVector BeamScale = NotHittingScale3D;
 	FRotator BeamRotation = InitialRotationBeam;
-	if (ShootSound) {
+	/*if (ShootSound) {
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShootSound, Start, 1.5f);
+	}*/
+	if (ShootWaterAudioComp != nullptr) {
+		if(!ShootWaterAudioComp->IsActive()) {
+			ShootWaterAudioComp->SetActive(true);
+		}
 	}
+	bIsShooting = false;
+	
 	if(GunTrace(HitResult))
 	{
 		FVector NewEnd = HitResult.ImpactPoint;
@@ -94,9 +108,6 @@ void AGun::PullTrigger()
 					UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraHitFire, HitResult.ImpactPoint);
 				}
 				FireObjectHit->DestroyFire(HitResult.GetComponent());
-				if (FireHitSound) {
-					UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireHitSound, NewEnd, 1.5f);
-				}
 				
 			}
 			else {
@@ -120,10 +131,10 @@ void AGun::PullTrigger()
 
 void AGun::ReleaseTrigger()
 {
-	if (StopShootSound) {
+	bIsShooting = false;
+	/*if (StopShootSound) {
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), StopShootSound, MeshComponent->GetSocketLocation(FName("muzzle")), 1.5f);
-	}
-	GunBeamMesh->SetHiddenInGame(true);
+	}*/
 	Niagara->SetHiddenInGame(true);
 	NiagaraEnd->SetHiddenInGame(true);
 }

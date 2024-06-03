@@ -18,6 +18,7 @@
 #include "NavigationSystem.h"
 #include "KoalaGameModeBase.h"
 #include "Consumable.h"
+#include "Components/AudioComponent.h"
 
 
 // Sets default values
@@ -48,13 +49,14 @@ void AFire::BeginPlay()
 	OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 	if (FireSound) {
-		FTimerDelegate FireSoundDelegate;
+		FireSoundComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FireSound, GetActorLocation());
+		/*FTimerDelegate FireSoundDelegate;
 		FireSoundDelegate.BindLambda([&]() {
 			if (FireSound) {
 				UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, GetActorLocation());
 			}
 		});
-		GetWorldTimerManager().SetTimer(FireSoundTimer, FireSoundDelegate, MakeFireSoundEverySeconds, true);
+		GetWorldTimerManager().SetTimer(FireSoundTimer, FireSoundDelegate, MakeFireSoundEverySeconds, true);*/
 	}
 	
 	
@@ -169,6 +171,9 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 	if (!ChildrenComps.IsEmpty()) {
 		for (USceneComponent* Comp : ChildrenComps) Comp->DestroyComponent();
 	}
+	if (FirePutoutSound) {
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirePutoutSound, ComponentHit->GetComponentLocation());
+	}
 	ComponentHit->DestroyComponent(false);
 	TArray<UBoxComponent*> Comps;
 	GetComponents(UBoxComponent::StaticClass(), Comps, true);
@@ -177,7 +182,10 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 		GameMode->FireActorsInLevel--;
 		UE_LOG(LogTemp, Warning, TEXT("Destroying FIRE"));
 		GetWorldTimerManager().ClearTimer(DamageTimer);
-		GetWorldTimerManager().ClearTimer(FireSoundTimer);
+		// GetWorldTimerManager().ClearTimer(FireSoundTimer);
+		if (FireSoundComp) {
+			FireSoundComp->SetActive(false, true);
+		}
 		GetWorldTimerManager().ClearTimer(SpreadTimer);
 		GetWorldTimerManager().ClearTimer(CollisionUpdateTimer);
 		GetWorldTimerManager().ClearAllTimersForObject(this);
@@ -245,7 +253,7 @@ void AFire::UpdateBoxCollisions()
 	UpdateOverlaps(true);
 }
 
-void AFire::MakeFire(FVector Location)
+void AFire::MakeFire(FVector Location, FRotator Rotation)
 {
 	UBoxComponent* NewBoxComp = Cast<UBoxComponent>(AddComponentByClass(UBoxComponent::StaticClass(), true, GetTransform(), false));
 	NewBoxComp->AttachToComponent(SceneRootComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -282,13 +290,13 @@ void AFire::ApplyDamageTimer()
 	if (!KoalaBasePlayer) {
 		GetWorldTimerManager().ClearTimer(SpreadTimer);
 		GetWorldTimerManager().ClearTimer(DamageTimer);
-		GetWorldTimerManager().ClearTimer(FireSoundTimer);
+		// GetWorldTimerManager().ClearTimer(FireSoundTimer);
 		return;
 	}
 	if (KoalaBasePlayer->IsDead()) {
 		GetWorldTimerManager().ClearTimer(SpreadTimer);
 		GetWorldTimerManager().ClearTimer(DamageTimer);
-		GetWorldTimerManager().ClearTimer(FireSoundTimer);
+		// GetWorldTimerManager().ClearTimer(FireSoundTimer);
 		return;
 	}
 	for (int i = 0; i < Num; i++) {
@@ -296,7 +304,7 @@ void AFire::ApplyDamageTimer()
 			OverlapActors.Empty();
 			GetWorldTimerManager().ClearTimer(SpreadTimer);
 			GetWorldTimerManager().ClearTimer(DamageTimer);
-			GetWorldTimerManager().ClearTimer(FireSoundTimer);
+			// GetWorldTimerManager().ClearTimer(FireSoundTimer);
 			return;
 		}
 		// UE_LOG(LogTemp, Warning, TEXT("%s"), *Actor->GetName());
@@ -430,11 +438,16 @@ FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations
 	TTuple<FVector, FRotator> Location = OutLocations[0];
 	
 	// UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
+	/*
 	AFire* NewFire = GetWorld()->SpawnActor<AFire>(FireClass, Location.Get<0>(), Location.Get<1>());
 	if(NewFire)
 	{
-		NewFire->SetActorEnableCollision(false);
-	}
+		NewFire->SetActorTickEnabled(false);
+		// NewFire->SetActorEnableCollision(true);
+		// 
+		// NewFire->SetActorEnableCollision(false);
+	}*/
+	MakeFire(Location.Get<0>(), Location.Get<1>());
 
 	OutLocations.RemoveAt(0);
 
