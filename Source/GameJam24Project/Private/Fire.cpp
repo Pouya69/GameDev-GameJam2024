@@ -415,7 +415,7 @@ FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations
 	TTuple<FVector, FRotator> Location = OutLocations[0];
 	
 	// UE_LOG(LogTemp, Warning, TEXT("%s %s"), *Location.Get<0>().ToString(), *Location.Get<1>().ToString());
-	/*
+	
 	AFire* NewFire = GetWorld()->SpawnActor<AFire>(FireClass, Location.Get<0>(), Location.Get<1>());
 	if(NewFire)
 	{
@@ -423,8 +423,8 @@ FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations
 		// NewFire->SetActorEnableCollision(true);
 		// 
 		// NewFire->SetActorEnableCollision(false);
-	}*/
-	MakeFire(Location.Get<0>(), Location.Get<1>());
+	}
+	// MakeFire(Location.Get<0>(), Location.Get<1>());
 
 	OutLocations.RemoveAt(0);
 

@@ -100,8 +100,8 @@ public:
 	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 
-	//UFUNCTION()
-	//void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
+	// UFUNCTION()
+	// void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
 
 	//UFUNCTION()
 	//void OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor);
