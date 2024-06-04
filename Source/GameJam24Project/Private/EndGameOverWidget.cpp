@@ -8,11 +8,11 @@ void UEndGameOverWidget::NativeConstruct()
 	Super::NativeConstruct();
 }
 
-void UEndGameOverWidget::BuildGameOverWidget(bool bWon, const FString& Message, const FString& InNextLevelName, int InStars)
+void UEndGameOverWidget::BuildGameOverWidget(bool bWon, const FString& Message, const TSubclassOf<UUserWidget>& InNextLevelIntroWidgetClass, int InStars)
 {
 	EndGameMessage = Message;
 	bWonGame = bWon;
-	NextLevelName = InNextLevelName;
+	NextLevelIntroWidgetClass = InNextLevelIntroWidgetClass;
 	Stars = InStars;
 	DisplayMyWidget_Implementation();
 	DisplayMyWidget();

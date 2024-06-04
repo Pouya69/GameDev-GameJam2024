@@ -97,6 +97,12 @@ bool AKoalaBaseCharacter::GetObjectAround(FHitResult& OutHitResult, float RangeC
 			Start = GetActorLocation();
 			End = Start + (RangeCheck * GetActorForwardVector());// + (-RangeCheck * GetActorUpVector());
 			bResult = GetWorld()->SweepSingleByChannel(OutHitResult, Start, End, FQuat::Identity,ECC_GameTraceChannel1, FCollisionShape::MakeSphere(RangeCheck),InParams);
+			if (bResult) {
+				if (OutHitResult.GetActor()->IsA(ABaseTree::StaticClass())) {
+					return false;
+
+				}
+			}
 		}
 	}
 	if (bResult) {

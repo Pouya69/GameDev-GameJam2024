@@ -418,7 +418,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	if (IsCarryingItem()) {
 		Params.AddIgnoredActor(ItemCarriedOnBack);
 	}
-	if (AreThereAnyTreesAround(HitResult)) {
+	if (AreThereAnyTreesAround(HitResult, Params)) {
 		/*if (TreeStartClimbingMontage) {
 			DisableInput(PlayerController);
 			PlayAnimMontage(TreeStartClimbingMontage);

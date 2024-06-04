@@ -52,7 +52,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 		void EndGame();
 	UPROPERTY(EditAnywhere, Category = "End Game")
-		FString NextLevelName;
+		TSubclassOf<UUserWidget> NextLevelIntroWidgetClass;
 	UPROPERTY(EditAnywhere, Category = "End Game")
 		TSubclassOf<class UEndGameOverWidget> GameOverWidgetClass;
 	UPROPERTY(VisibleAnywhere, Category = "End Game")

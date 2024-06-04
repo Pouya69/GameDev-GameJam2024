@@ -17,7 +17,7 @@ class GAMEJAM24PROJECT_API UEndGameOverWidget : public UUserWidget
 public:
 	virtual void NativeConstruct() override;
 
-	void BuildGameOverWidget(bool bWon, const FString& Message, const FString& InNextLevelName, int InStars);
+	void BuildGameOverWidget(bool bWon, const FString& Message, const TSubclassOf<UUserWidget>& InNextLevelIntroWidgetClass, int InStars);
 
 	DECLARE_EVENT(FLayerViewModel, FDisplayMyWidget)
 	UFUNCTION(BlueprintCallable, BlueprintNativeEvent)
@@ -32,7 +32,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		FString EndGameMessage;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		FString NextLevelName;
+		TSubclassOf<UUserWidget> NextLevelIntroWidgetClass;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 		int Stars;
 

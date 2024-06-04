@@ -45,8 +45,8 @@ void AFire::BeginPlay()
 
 	GetWorldTimerManager().SetTimer(SpreadTimer, this, &AFire::SpreadFire, SpreadTime, true);
 
-	OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
-	OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
+	// OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
+	// OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 	if (FireSound) {
 		FireSoundComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FireSound, GetActorLocation());
@@ -58,7 +58,10 @@ void AFire::BeginPlay()
 		});
 		GetWorldTimerManager().SetTimer(FireSoundTimer, FireSoundDelegate, MakeFireSoundEverySeconds, true);*/
 	}
-	
+	FireDestroyAudioComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FirePutoutSound, GetActorLocation(), FRotator::ZeroRotator, 1, 1, 1, nullptr, nullptr, false);
+	if(FireDestroyAudioComp) {
+		FireDestroyAudioComp->SetActive(false);
+	}
 	
 }
 
@@ -82,70 +85,10 @@ void AFire::SpreadFire()
 
 bool AFire::GetRandomLocation(FVector& OutLocation)
 {
-	/* FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-	FHitResult HitResult;
-	const FVector SpawnLocFireExists = OutLocation + (FVector::UpVector * FireCreationUpwardsCheck);
-	const bool bFoundLocationUpFireExists = GetWorld()->SweepSingleByChannel(HitResult, SpawnLocFireExists, SpawnLocFireExists + (FVector::UpVector * FireCreationUpwardsCheck / 3), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
-	if (bFoundLocationUpFireExists) {
-		if (HitResult.GetActor()->IsA(AFire::StaticClass())) {
-			bIsCheckingOnTree = false;
-			OutLocation = GetActorLocation();
-			return false;
-		}
-	}
-	const float RandomUpwards = FMath::RandRange(FireCreationUpwardsCheck / 3, FireCreationUpwardsCheck);
-	const FVector SpawnLoc = OutLocation + (FVector::UpVector * RandomUpwards);
-	const bool bFoundLocationUp = GetWorld()->SweepSingleByChannel(HitResult, SpawnLoc, SpawnLoc + (FVector::UpVector * RandomUpwards/3), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
-
-	if (bFoundLocationUp) {
-		if (HitResult.GetActor()->IsA(TreeClass)) {
-			bIsCheckingOnTree = true;
-			UE_LOG(LogTemp, Warning, TEXT("UP"));
-			OutLocation = HitResult.ImpactPoint;
-			return true;
-		}
-		if (bIsCheckingOnTree) {
-			bIsCheckingOnTree = false;
-			OutLocation = GetActorLocation();
-			UE_LOG(LogTemp, Warning, TEXT("Reset"));
-		}
-	}
-	else {
-		if (bIsCheckingOnTree) {
-			bIsCheckingOnTree = false;
-			OutLocation = GetActorLocation();
-			UE_LOG(LogTemp, Warning, TEXT("Reset"));
-		}
-	} */
-	/*
-	bool bIsOnTree = false;
-	for (const AActor* Actor : OverlapActors) {
-		if (Actor->IsA(TreeClass)) {
-			bIsOnTree = true;
-			break;
-		}
-	}
-	if (bIsOnTree) {
-		
-		// OutLocation = GetActorLocation();
-	}
-	*/
 	UNavigationSystemV1* NavSystem = FNavigationSystem::GetCurrent<UNavigationSystemV1>(GetWorld());
 	FNavLocation MoveLocationNav;
 	bool bFoundLocation = NavSystem->GetRandomReachablePointInRadius(LocationToSpawnFrom, FireCreationRadius, MoveLocationNav);
 	if (!bFoundLocation) {
-		/*if (bIsOnTree) {
-			const FVector SpawnLoc2 = LocationToSpawnFrom + (FVector::RightVector * FireCreationUpwardsCheck);
-			const bool bFoundLocationRight = GetWorld()->SweepMultiByChannel(HitResults, SpawnLoc2, SpawnLoc2 + (FVector::RightVector * FireCreationUpwardsCheck / 2), FQuat::Identity, ECC_WorldStatic, FCollisionShape::MakeSphere(20.f), Params);
-			if (bFoundLocationRight) {
-				for (const FHitResult HitResult : HitResults) {
-					OutLocations.Add(HitResult.ImpactPoint);
-				}
-				return true;
-			}
-			return false;
-		}*/
 		
 		bFoundLocation = NavSystem->GetRandomReachablePointInRadius(GetActorLocation(), FireCreationRadius, MoveLocationNav);
 		if (!bFoundLocation) return false;
@@ -164,19 +107,34 @@ void AFire::SpawnFire(FVector Location)
 	}
 }
 
-void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
+void AFire::DestroyFire(UPrimitiveComponent* ComponentHit, bool bForceDestroy)
 {
+	if (bForceDestroy) {
+		TArray<USceneComponent*> ChildrenComps;
+		ComponentHit->GetChildrenComponents(true, ChildrenComps);
+		if (!ChildrenComps.IsEmpty()) {
+			for (USceneComponent* Comp : ChildrenComps) Comp->DestroyComponent();
+		}
+	}
+	if (FireDestroyAudioComp) {
+		FireDestroyAudioComp->SetWorldLocation(ComponentHit->GetComponentLocation());
+		FireDestroyAudioComp->SetActive(true, true);
+		FireDestroyAudioComp->Play();
+	}
 	TArray<USceneComponent*> ChildrenComps;
 	ComponentHit->GetChildrenComponents(true, ChildrenComps);
 	if (!ChildrenComps.IsEmpty()) {
 		for (USceneComponent* Comp : ChildrenComps) Comp->DestroyComponent();
 	}
-	if (FirePutoutSound) {
+	/*if (FirePutoutSound) {
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), FirePutoutSound, ComponentHit->GetComponentLocation());
-	}
+	}*/
+
 	ComponentHit->DestroyComponent(false);
 	TArray<UBoxComponent*> Comps;
 	GetComponents(UBoxComponent::StaticClass(), Comps, true);
+	
+	
 	if (Comps.IsEmpty()) {
 		AKoalaGameModeBase* GameMode = Cast<AKoalaGameModeBase>(UGameplayStatics::GetGameMode(GetWorld()));
 		GameMode->FireActorsInLevel--;
@@ -194,13 +152,22 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit)
 }
 
 
-void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
+// void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
+void AFire::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Overlapping %s"), *OtherActor->GetName());
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
 	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass()) || OtherActor->IsA(AConsumable::StaticClass())) {
 		OverlapActors.Add(OtherActor);
+	}
+	else if (AFire* OtherFire = Cast<AFire>(OtherActor)) {
+		TArray<AActor*> Overlapss;
+		OtherComp->GetOverlappingActors(Overlapss, ABaseTree::StaticClass());
+		if (Overlapss.IsEmpty()) {
+			OtherFire->DestroyFire(OverlappedComponent, true);
+			return;
+		}
 	}
 	else {
 		return;
@@ -231,7 +198,8 @@ void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 	}
 }
 
-void AFire::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
+// void AFire::OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor)
+void AFire::OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 
 	const bool bIsAKoala = OtherActor->IsA(AKoalaBaseCharacter::StaticClass());
@@ -268,11 +236,20 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 	// NewBoxComp->SetHiddenInGame(false, true);
 	NewBoxComp->bMultiBodyOverlap = true;
 
-	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
+	NewBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
+	NewBoxComp->OnComponentEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
+
+	/*if (NewBoxComp->IsOverlappingActor(this)) {
+		UE_LOG(LogTemp, Warning, TEXT("Destroying overllaped fire"));
+		NewBoxComp->DestroyComponent();
+		return;
+	}*/
+	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, true);
 	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
 	NewNiagara->SetHiddenInGame(false, true);
 
 	UpdateBoxCollisions();
+	// UE_LOG(LogTemp, Warning, TEXT("Children of %s: %d"), *GetName(), GetComponents().Num());
 }
 
 void AFire::ApplyDamageTimer()

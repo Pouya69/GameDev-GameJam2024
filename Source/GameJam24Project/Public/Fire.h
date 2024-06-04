@@ -30,6 +30,7 @@ public:
 	USoundBase* FireSound;
 
 	UAudioComponent* FireSoundComp;
+	UAudioComponent* FireDestroyAudioComp;
 
 	UPROPERTY(EditAnywhere, Category = "Fire Properties")
 	float MakeFireSoundEverySeconds = 0.2f;
@@ -88,13 +89,22 @@ public:
 
 	void SpawnFire(FVector Location);
 
-	void DestroyFire(UPrimitiveComponent* ComponentHit);
+	void DestroyFire(UPrimitiveComponent* ComponentHit, bool bForceDestroy = false);
+
+
 
 	UFUNCTION()
-	void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
-	void OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor);
+	void OnOverlapEnd(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+
+	//UFUNCTION()
+	//void OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor);
+
+	//UFUNCTION()
+	//void OnOverlapEnd(AActor* OverlappedActor, AActor* OtherActor);
 
 	UFUNCTION()
 	virtual float TakeDamage(float Damage, struct FDamageEvent const &DamageEvent,  class AController* InstigatedBy, AActor* DamageCauser) override;

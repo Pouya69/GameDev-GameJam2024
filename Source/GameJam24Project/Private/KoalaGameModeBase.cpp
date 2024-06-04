@@ -16,7 +16,7 @@
 
 void AKoalaGameModeBase::BeginPlay()
 {
-	
+	SetActorTickEnabled(true);
 	/*UGameplayStatics::GetAllActorsOfClass(GetWorld(), ObjectiveClass, FindActors);
 	if (!FindActors.IsEmpty()) {
 		for (AActor* Actor : FindActors) {
@@ -123,7 +123,6 @@ void AKoalaGameModeBase::CreateConsumableRandom() {
 	// TreesInLevel[FMath::RandRange(0, TreesInLevel.Num()-1)]->SpawnConsuamble();
 }
 
-
 bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMissionObjective* Objective)
 {
 	if (!Objective) {
@@ -201,7 +200,7 @@ void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message, int KoalasS
 		GameOverWidget = CreateWidget<UEndGameOverWidget>(PlayerCharacter->PlayerController, GameOverWidgetClass, FName("Game Over Widget"));
 		if (GameOverWidget) {
 			PlayerCharacter->PlayerController->bShowMouseCursor = true;
-			GameOverWidget->BuildGameOverWidget(bWon, Message, NextLevelName, Stars);
+			GameOverWidget->BuildGameOverWidget(bWon, Message, NextLevelIntroWidgetClass, Stars);
 			GameOverWidget->AddToViewport();
 		}
 	}
