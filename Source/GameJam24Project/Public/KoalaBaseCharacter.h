@@ -30,15 +30,14 @@ public:
 	// Delegate signature
 	UFUNCTION(BlueprintCallable)
 		virtual void Die();
-
 	FOnDeath DeathEvent;
 
 	class AKoalaGameModeBase* GameMode;
 
 	UCapsuleComponent* CapsuleComp;
-
 	UPROPERTY(EditAnywhere, Category = "Death")
 		UMaterialInterface* DeathMaterial;
+
 	UPROPERTY(EditAnywhere, Category = "Death")
 		FVector DeathMeshImpulse;
 	UPROPERTY(EditAnywhere, Category="Classes and stuff")

@@ -15,6 +15,20 @@ class GAMEJAM24PROJECT_API AKoalaGameModeBase : public AGameModeBase
 	GENERATED_BODY()
 
 public:
+	// Player Help and Clue
+	UPROPERTY(EditAnywhere, Category = "Player Help and Clue")
+		UMaterialInterface*	CluePlayerHelpMaterial;
+	UPROPERTY(EditAnywhere, Category = "Player Help and Clue")
+		int GiveClueToPlayerEverySeconds = 10;
+	UPROPERTY(EditAnywhere, Category = "Player Help and Clue")
+		float ShowPlayerClueForSeconds = 2.f;
+	UPROPERTY(EditAnywhere, Category = "Player Help and Clue")
+		float PlayerClueMinimumRadius = 1500.f;
+	void GiveClueToPlayer();
+	FTimerHandle PlayerHelpClueDisableTimerHandle;
+	FTimerHandle PlayerHelpClueREPEATTimerHandle;
+
+public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)
 		TArray<class AMissionObjective*> MissionObjectives;
 	UPROPERTY(VisibleAnywhere)

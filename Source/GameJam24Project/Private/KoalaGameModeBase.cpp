@@ -79,7 +79,7 @@ void AKoalaGameModeBase::BeginPlay()
 	if (AtmosphereSound) {
 		AtmosphereSoundComp = UGameplayStatics::SpawnSound2D(GetWorld(), AtmosphereSound);
 	}
-	
+	GetWorldTimerManager().SetTimer(PlayerHelpClueREPEATTimerHandle, this, &AKoalaGameModeBase::GiveClueToPlayer, GiveClueToPlayerEverySeconds, true, 1.f);
 }
 
 
@@ -121,6 +121,36 @@ void AKoalaGameModeBase::CreateConsumableRandom() {
 		ConsumablesInLevel++;
 	}
 	// TreesInLevel[FMath::RandRange(0, TreesInLevel.Num()-1)]->SpawnConsuamble();
+}
+
+void AKoalaGameModeBase::GiveClueToPlayer()
+{
+	if (BabyCharacters.IsEmpty() || PlayerCharacter == nullptr) return;
+	if (GetWorldTimerManager().TimerExists(PlayerHelpClueDisableTimerHandle)) return;
+	for (AKoalaBabyCharacter* BabyChar : BabyCharacters) {
+		if (BabyChar == nullptr) continue;
+		if (!BabyChar->IsDead()) {
+			if (FVector::Dist(PlayerCharacter->GetActorLocation(), BabyChar->GetActorLocation()) >= PlayerClueMinimumRadius) {
+				BabyChar->GetMesh()->SetMaterial(0, CluePlayerHelpMaterial);
+			}
+			
+		}
+	}
+	FTimerDelegate ClueDelegate;
+	ClueDelegate.BindLambda([&]() {
+		if (!BabyCharacters.IsEmpty()) {
+			for (AKoalaBabyCharacter* BabyChar : BabyCharacters) {
+				if (BabyChar == nullptr) continue;
+				if (!BabyChar->IsDead()) {
+					if (BabyChar->NormalMaterial) {
+						BabyChar->GetMesh()->SetMaterial(0, BabyChar->NormalMaterial);
+					}
+					
+				}
+			}
+		}
+	});
+	GetWorldTimerManager().SetTimer(PlayerHelpClueDisableTimerHandle, ClueDelegate, ShowPlayerClueForSeconds, false);
 }
 
 bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMissionObjective* Objective)
@@ -185,6 +215,9 @@ void AKoalaGameModeBase::GameOver(bool bWon, const FString& Message, int KoalasS
 	GetWorldTimerManager().ClearTimer(TimerHandleConsumablesRandom);
 	GetWorldTimerManager().ClearTimer(TimerHandleExtraction);
 	GetWorldTimerManager().ClearTimer(TimerHandleFireRandom);
+	GetWorldTimerManager().ClearTimer(PlayerHelpClueREPEATTimerHandle);
+	GetWorldTimerManager().ClearTimer(PlayerHelpClueDisableTimerHandle);
+	
 	if (AtmosphereSoundComp) {
 		AtmosphereSoundComp->SetActive(false);
 	}

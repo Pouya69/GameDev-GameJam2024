@@ -25,4 +25,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 	virtual void Die() override;
+
+	UPROPERTY(EditAnywhere, Category = "Player Clue")
+		UMaterialInterface* NormalMaterial;
 };
