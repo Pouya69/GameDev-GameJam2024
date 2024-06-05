@@ -50,13 +50,6 @@ void AFire::BeginPlay()
 	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 	if (FireSound) {
 		FireSoundComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FireSound, GetActorLocation());
-		/*FTimerDelegate FireSoundDelegate;
-		FireSoundDelegate.BindLambda([&]() {
-			if (FireSound) {
-				UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, GetActorLocation());
-			}
-		});
-		GetWorldTimerManager().SetTimer(FireSoundTimer, FireSoundDelegate, MakeFireSoundEverySeconds, true);*/
 	}
 	FireDestroyAudioComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FirePutoutSound, GetActorLocation(), FRotator::ZeroRotator, 1, 1, 1, nullptr, nullptr, false);
 	if(FireDestroyAudioComp) {
@@ -155,23 +148,36 @@ void AFire::DestroyFire(UPrimitiveComponent* ComponentHit, bool bForceDestroy)
 // void AFire::OnOverlapBegin(AActor* OverlappedActor, AActor* OtherActor)
 void AFire::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Overlapping %s"), *OtherActor->GetName());
 	// TODO Fix applydamage when moving into fire. Should stop applying directly but only trough the timer handler
 	// const bool bIsAKoala = OtherActor->IsA(::StaticClass());
 	if (OtherActor->IsA(ACharacter::StaticClass()) || OtherActor->IsA(ABaseTree::StaticClass()) || OtherActor->IsA(AConsumable::StaticClass())) {
 		OverlapActors.Add(OtherActor);
 	}
-	else if (AFire* OtherFire = Cast<AFire>(OtherActor)) {
+	if (OtherComp->GetOwner() == this) {
+		DestroyFire(OverlappedComponent, true);
+		return;
+	}
+	/*else if (AFire* OtherFire = Cast<AFire>(OtherActor)) {
 		TArray<AActor*> Overlapss;
 		OtherComp->GetOverlappingActors(Overlapss, ABaseTree::StaticClass());
 		if (Overlapss.IsEmpty()) {
 			OtherFire->DestroyFire(OverlappedComponent, true);
 			return;
 		}
+	}*/
+	if (ABaseTree* TreeObject = Cast<ABaseTree>(OtherActor)) {
+		//InitializeSpline(TreeObject->SplineComponent);
+		UE_LOG(LogTemp, Warning, TEXT("Overlapping TREE %s"), *OtherActor->GetName());
+		InitializeSplines(TreeObject);
+		/* if(TargetSpline)
+		{
+			GetWorldTimerManager().SetTimer(SplineTimer, this, &AFire::FollowSpline, 1.f, true, 0.f);
+		} */
+		//TreeObject->StartFire();
 	}
-	else {
+	/*else {
 		return;
-	}
+	}*/
 	const bool bTimerExists = GetWorldTimerManager().TimerExists(DamageTimer);
 	if (bTimerExists) return;
 	if(AKoalaBaseCharacter* KoalaBaseCharacter = Cast<AKoalaBaseCharacter>(OtherActor))
@@ -239,11 +245,11 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 	NewBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 	NewBoxComp->OnComponentEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
 
-	/*if (NewBoxComp->IsOverlappingActor(this)) {
+	if (NewBoxComp->IsOverlappingActor(this)) {
 		UE_LOG(LogTemp, Warning, TEXT("Destroying overllaped fire"));
 		NewBoxComp->DestroyComponent();
 		return;
-	}*/
+	}
 	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, true);
 	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
 	NewNiagara->SetHiddenInGame(false, true);
@@ -425,7 +431,7 @@ FVector AFire::SpawnSplineActors(TArray<TTuple<FVector, FRotator>>& OutLocations
 		// NewFire->SetActorEnableCollision(false);
 	}
 	// MakeFire(Location.Get<0>(), Location.Get<1>());
-
+	UE_LOG(LogTemp, Warning, TEXT("SPAWNING TREE FIRE"));
 	OutLocations.RemoveAt(0);
 
 	return Location.Get<0>();

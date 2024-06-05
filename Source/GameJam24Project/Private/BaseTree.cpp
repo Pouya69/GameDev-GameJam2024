@@ -106,7 +106,7 @@ bool ABaseTree::AlreadyHasConsumableOnTree() const
 	if (FoundActors.IsEmpty()) return false;
 	for (AActor* FoundActor : FoundActors) {
 		if (FoundActor->IsOwnedBy(this)) {
-			UE_LOG(LogTemp, Warning, TEXT("FOUND fruit on %s"), *GetName());
+			// UE_LOG(LogTemp, Warning, TEXT("FOUND fruit on %s"), *GetName());
 			return true;
 		}
 	}

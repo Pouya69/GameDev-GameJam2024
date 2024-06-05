@@ -20,6 +20,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "KoalaGameModeBase.h"
 #include "Components/AudioComponent.h"
+#include "Components/SplineComponent.h"
+
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
 {
@@ -189,6 +191,7 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 			}
 			ClimbingDir = Input.X > 0 ? 90 : -90;
 			if (CurrentClimbingTree == nullptr) return;
+			// CurrentClimbingTree->SplineComponent->GetRotationAtSplinePoint( )
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::RightVector);
 			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
 			CurrentTreeLocation.Z = GetActorLocation().Z;
