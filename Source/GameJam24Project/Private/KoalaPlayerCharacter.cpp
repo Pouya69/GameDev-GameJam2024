@@ -21,6 +21,7 @@
 #include "KoalaGameModeBase.h"
 #include "Components/AudioComponent.h"
 #include "Components/SplineComponent.h"
+#include "ExtractionReadySetter.h"
 
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
@@ -352,7 +353,10 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 	if (AConsumable* Consumable = Cast<AConsumable>(HitResult.GetActor())) {
 		Super::ConsumeItem(Consumable);
 	}
-
+	else if (AExtractionReadySetter* ExtractionReadySetter = Cast<AExtractionReadySetter>(HitResult.GetActor())) {
+		// TODO: make a confirmation UI
+		ExtractionReadySetter->ExtractNow();
+	}
 
 
 
