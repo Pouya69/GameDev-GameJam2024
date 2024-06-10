@@ -106,6 +106,10 @@ public:
 
 	void UpdateKoalasAliveWidget();
 
+	class UExtractionReadySetterWidget* ExtractionReadySetterWidget;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Widgets")
+		TSubclassOf<class UExtractionReadySetterWidget> ExtractionReadySetterWidgetClass;
+
 public:
 	// Animations
 	float ClimbingDir;

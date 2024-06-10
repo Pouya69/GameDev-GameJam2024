@@ -22,6 +22,7 @@
 #include "Components/AudioComponent.h"
 #include "Components/SplineComponent.h"
 #include "ExtractionReadySetter.h"
+#include "ExtractionReadySetterWidget.h"
 
 
 AKoalaPlayerCharacter::AKoalaPlayerCharacter()
@@ -354,8 +355,19 @@ void AKoalaPlayerCharacter::Interact(const FInputActionValue& Value)
 		Super::ConsumeItem(Consumable);
 	}
 	else if (AExtractionReadySetter* ExtractionReadySetter = Cast<AExtractionReadySetter>(HitResult.GetActor())) {
-		// TODO: make a confirmation UI
-		ExtractionReadySetter->ExtractNow();
+		if(GameMode->TimeLeftExtraction > ExtractionReadySetter->ExtractionNewTime) {
+			if (ExtractionReadySetterWidgetClass) {
+				ExtractionReadySetterWidget = CreateWidget<UExtractionReadySetterWidget>(PlayerController, ExtractionReadySetterWidgetClass);
+				if (ExtractionReadySetterWidget) {
+					ExtractionReadySetterWidget->BuildMyWidget(this, ExtractionReadySetter);
+					ExtractionReadySetterWidget->AddToViewport();
+					PlayerController->bShowMouseCursor = true;
+					DisableInput(PlayerController);
+				}
+			}
+		}
+		
+		// ExtractionReadySetter->ExtractNow();
 	}
 
 

@@ -3,11 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "BaseInteractableObject.h"
 #include "ExtractionReadySetter.generated.h"
 
 UCLASS()
-class GAMEJAM24PROJECT_API AExtractionReadySetter : public AActor
+class GAMEJAM24PROJECT_API AExtractionReadySetter : public ABaseInteractableObject
 {
 	GENERATED_BODY()
 	
