@@ -113,7 +113,8 @@ public:
 public:
 	// Animations
 	float ClimbingDir;
-
+	UPROPERTY(EditAnywhere, Category = "Animations | Locomotion")
+		float SkeletalMeshTreeClimbingAddition = 50.f;
 	UPROPERTY(EditAnywhere, Category = "Animations | Locomotion")
 		UAnimMontage* TreeStartClimbingMontage;
 

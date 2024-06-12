@@ -221,6 +221,19 @@ void AKoalaPlayerCharacter::Move(const FInputActionValue& Value)
 				ClimbingDir = 0;
 				return;
 			}
+			FHitResult HitResult;
+			FCollisionQueryParams Params;
+			if (IsCarryingItem()) {
+				Params.AddIgnoredActor(ItemCarriedOnBack);
+			}
+			if (!AreThereAnyTreesAround(HitResult, Params)) {
+				ClimbingDir = 0;
+				return;
+			}
+			if (HitResult.GetActor() != CurrentClimbingTree) {
+				ClimbingDir = 0;
+				return;
+			}
 			ClimbingDir = Input.Y > 0 ? 180 : -180;
 			const FVector MovementDirection = MovementRotation.RotateVector(FVector::UpVector);
 			FVector CurrentTreeLocation = CurrentClimbingTree->GetActorLocation();
@@ -429,6 +442,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 	// This PlayerJump function is for jumping AND interacting with trees as a result of player pressing JUMP KEY
 	// TODO: We should also check if the player is already on tree
 	if (bIsOnTree) {
+		// GetMesh()->AddRelativeLocation((-(GetActorForwardVector() * SkeletalMeshTreeClimbingAddition)));
 		DetachFromCurrentTree();
 		return;
 	}
@@ -456,6 +470,9 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		GetCharacterMovement()->StopMovementImmediately();
 		SetActorLocation(TargetLocation);
 		PlayerController->SetControlRotation((-1 * Direction).Rotation());
+		// FVector MeshLoc = GetMesh()->GetComponentLocation();
+		// MeshLoc += (GetMesh()->GetForwardVector() * SkeletalMeshTreeClimbingAddition);
+		// GetMesh()->AddRelativeLocation((GetActorForwardVector() * SkeletalMeshTreeClimbingAddition));
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Flying);  // To allow the character to go up and down freely
 		bIsOnTree = true;  // It is set in Anim Montage
 		GetCharacterMovement()->bOrientRotationToMovement = false;

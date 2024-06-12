@@ -77,7 +77,7 @@ void AKoalaGameModeBase::BeginPlay()
 	}
 	bGameIsOver = false;
 	if (AtmosphereSound) {
-		AtmosphereSoundComp = UGameplayStatics::SpawnSound2D(GetWorld(), AtmosphereSound);
+		AtmosphereSoundComp = UGameplayStatics::SpawnSound2D(GetWorld(), AtmosphereSound, 1, 1, 0, nullptr, false, false);
 	}
 	GetWorldTimerManager().SetTimer(PlayerHelpClueREPEATTimerHandle, this, &AKoalaGameModeBase::GiveClueToPlayer, GiveClueToPlayerEverySeconds, true, 1.f);
 }
@@ -151,6 +151,12 @@ void AKoalaGameModeBase::GiveClueToPlayer()
 		}
 	});
 	GetWorldTimerManager().SetTimer(PlayerHelpClueDisableTimerHandle, ClueDelegate, ShowPlayerClueForSeconds, false);
+}
+
+bool AKoalaGameModeBase::IsInExtractionArea(const AActor* Actor) const
+{
+	if (ExtractionArea == nullptr) return false;
+	return ExtractionArea->IsOverlappingActor(Actor);
 }
 
 bool AKoalaGameModeBase::CheckPlayerAndCompleteObjective(AActor* OtherActor, AMissionObjective* Objective)

@@ -27,6 +27,7 @@ public:
 	void GiveClueToPlayer();
 	FTimerHandle PlayerHelpClueDisableTimerHandle;
 	FTimerHandle PlayerHelpClueREPEATTimerHandle;
+	bool IsInExtractionArea(const AActor* Actor) const;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite)

@@ -41,13 +41,10 @@ void AFire::BeginPlay()
 
 	// TODO Check where the safezone is so fire spread in that direction
 
-	MakeFire(GetActorLocation());
-
-	GetWorldTimerManager().SetTimer(SpreadTimer, this, &AFire::SpreadFire, SpreadTime, true);
+	
 
 	// OnActorBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
 	// OnActorEndOverlap.AddDynamic(this, &AFire::OnOverlapEnd);
-	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
 	if (FireSound) {
 		FireSoundComp = UGameplayStatics::SpawnSoundAtLocation(GetWorld(), FireSound, GetActorLocation());
 	}
@@ -55,6 +52,9 @@ void AFire::BeginPlay()
 	if(FireDestroyAudioComp) {
 		FireDestroyAudioComp->SetActive(false);
 	}
+	MakeFire(GetActorLocation());
+	GetWorldTimerManager().SetTimer(DamageTimer, this, &AFire::ApplyDamageTimer, 1.f, true, 0.f);
+	GetWorldTimerManager().SetTimer(SpreadTimer, this, &AFire::SpreadFire, SpreadTime, true);
 	
 }
 
@@ -239,7 +239,7 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	// NewBoxComp->SetHiddenInGame(false, true);
+	NewBoxComp->SetHiddenInGame(false, true);
 	NewBoxComp->bMultiBodyOverlap = true;
 
 	NewBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
@@ -250,7 +250,9 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 		NewBoxComp->DestroyComponent();
 		return;
 	}
-	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, true);
+	if (!NewBoxComp || !NiagaraSystemManual) return;
+	FireSoundComp->SetWorldLocation(NewBoxComp->GetComponentLocation());
+	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
 	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
 	NewNiagara->SetHiddenInGame(false, true);
 

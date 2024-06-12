@@ -261,45 +261,33 @@ void AKoalaBaseCharacter::Sleep()
 		if (GameMode && !GameMode->bGameIsOver) {
 			if (!bIsDead) {
 				// Wake up after sleeping for X seconds
-				if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
-					EnableInput((PlayerController));
-				}
-				bIsSleeping = false;
-				if (NiagaraSleeping) {
-					NiagaraSleeping->SetHiddenInGame(true);
-				}
-				Stamina = StaminaAfterSleep;
-				// GetWorldTimerManager().ClearTimer(SleepSoundTimerHandle);
-				// UE_LOG(LogTemp, Warning, TEXT("Awake: %s"), *GetFullName());
-			}
-		}
-		
-		/*else {
-			GetWorldTimerManager().ClearTimer(SleepTimerHandle);
-		}*/
-	});
-	/*if (SleepingSound) {
-		FTimerDelegate TimerDelegateSleepingSound;
-		TimerDelegateSleepingSound.BindLambda([&]() {
-			if (GameMode && !GameMode->bGameIsOver) {
-				if (!bIsDead && !IsOnFire()) {
-					if (SleepingSound) {
-						if (IsA(AKoalaPlayerCharacter::StaticClass())) {
-							UGameplayStatics::PlaySound2D(GetWorld(), SleepingSound, 1.5, SoundPitches);
+				if (IsA(AKoalaPlayerCharacter::StaticClass())) {
+					if (APlayerController* PlayerController = Cast<APlayerController>(GetController())) {
+						EnableInput((PlayerController));
+						bIsSleeping = false;
+						if (NiagaraSleeping) {
+							NiagaraSleeping->SetHiddenInGame(true);
 						}
-						else {
-							UGameplayStatics::PlaySoundAtLocation(GetWorld(), SleepingSound, GetActorLocation(), 1.5, SoundPitches);
+						Stamina = StaminaAfterSleep;
+						GetWorldTimerManager().ClearTimer(SleepTimerHandle);
+					}
+				}
+				else {
+					if (!GameMode->IsInExtractionArea(this)) {
+						bIsSleeping = false;
+						if (NiagaraSleeping) {
+							NiagaraSleeping->SetHiddenInGame(true);
 						}
+						Stamina = StaminaAfterSleep;
+						GetWorldTimerManager().ClearTimer(SleepTimerHandle);
 					}
 				}
 				
+				
 			}
-		});
-		GetWorldTimerManager().SetTimer(SleepSoundTimerHandle, TimerDelegateSleepingSound, MakeSleepingSoundEverySeconds, true, 0);
-	}*/
-	
-	// UE_LOG(LogTemp, Warning, TEXT("Sleeping: %s"), *GetFullName());
-	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, false);
+		}
+	});
+	GetWorldTimerManager().SetTimer(SleepTimerHandle, TimerDelegate, SleepDelay, true);
 	
 }
 
