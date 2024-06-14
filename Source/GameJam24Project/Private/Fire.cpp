@@ -239,7 +239,7 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 	NewBoxComp->SetCollisionObjectType(ECollisionChannel::ECC_WorldStatic);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Overlap);
 	NewBoxComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Block);
-	NewBoxComp->SetHiddenInGame(false, true);
+	// NewBoxComp->SetHiddenInGame(false, true);
 	NewBoxComp->bMultiBodyOverlap = true;
 
 	NewBoxComp->OnComponentBeginOverlap.AddDynamic(this, &AFire::OnOverlapBegin);
@@ -250,13 +250,17 @@ void AFire::MakeFire(FVector Location, FRotator Rotation)
 		NewBoxComp->DestroyComponent();
 		return;
 	}
-	if (!NewBoxComp || !NiagaraSystemManual) return;
+	// if (!NewBoxComp || !NiagaraSystemManual) return;
 	FireSoundComp->SetWorldLocation(NewBoxComp->GetComponentLocation());
-	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, false);
-	NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
-	NewNiagara->SetHiddenInGame(false, true);
+	UNiagaraComponent* NewNiagara = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystemManual, NewBoxComp, NAME_None, FVector::ZeroVector, NiagaraParticleRotation, EAttachLocation::SnapToTargetIncludingScale, true);
+	// if (NewNiagara == nullptr) return;
+	// NewNiagara->SetRelativeScale3D(NiagaraParticleScale);
+	// NewBoxComp->SetComponentTickEnabled(false);
+	// NewNiagara->SetComponentTickEnabled(false);
+	// NewNiagara->SetHiddenInGame(false, true);
+	// NewNiagara->bAllowCullDistanceVolume = false;
 
-	UpdateBoxCollisions();
+	// UpdateBoxCollisions();
 	// UE_LOG(LogTemp, Warning, TEXT("Children of %s: %d"), *GetName(), GetComponents().Num());
 }
 

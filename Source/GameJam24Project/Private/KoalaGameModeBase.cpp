@@ -95,7 +95,7 @@ void AKoalaGameModeBase::CreateFireRandom()
 	const bool bFoundLocation = NavSystem->GetRandomPointInNavigableRadius(BabyCharacter->GetActorLocation(), RadiusRandom, MoveLocationNav);
 	if (!bFoundLocation) return;
 	AFire* FireObjectSpawned = GetWorld()->SpawnActor<AFire>(FireClass, MoveLocationNav.Location, FRotator::ZeroRotator);
-	
+	FireObjectSpawned->SetActorTickEnabled(false);
 	TArray<AActor*> OutActors;
 	FireObjectSpawned->GetOverlappingActors(OutActors, FireClass);
 	if (!OutActors.IsEmpty()) {

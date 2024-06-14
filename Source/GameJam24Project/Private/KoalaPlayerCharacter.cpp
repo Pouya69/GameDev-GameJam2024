@@ -112,6 +112,7 @@ void AKoalaPlayerCharacter::Die()
 
 void AKoalaPlayerCharacter::CarryItemOnBack(AActor* ItemToCarry)
 {
+	if (GetCharacterMovement()->IsFalling() && ItemToCarry->IsA(AKoalaBabyCharacter::StaticClass())) return;
 	UPrimitiveComponent* PrimRootComp = Cast<UPrimitiveComponent>(ItemToCarry->GetRootComponent());
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Pawn, ECollisionResponse::ECR_Ignore);
 	PrimRootComp->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
@@ -479,6 +480,7 @@ void AKoalaPlayerCharacter::PlayerJump(const FInputActionValue& Value)
 		if (JumpingSound) {
 			UGameplayStatics::PlaySound2D(GetWorld(), JumpingSound, SoundPitches);
 		}
+		StopShoot(0);
 		return;
 	}
 	if (!GetCharacterMovement()->IsFalling()) {
@@ -506,7 +508,7 @@ void AKoalaPlayerCharacter::Shoot(const FInputActionValue& Value)
 
 void AKoalaPlayerCharacter::StopShoot(const FInputActionValue& Value)
 {
-	if (bIsOnTree) return;
+	// if (bIsOnTree) return;
 	if (Gun)
 	{
 		if (Gun->ShootWaterAudioComp) {
