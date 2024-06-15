@@ -45,6 +45,8 @@ private:
 		int GetBabyKoalasLeft() const;
 	UFUNCTION(BlueprintCallable)
 		float GetGunAmmo() const;
+	UFUNCTION(BlueprintCallable)
+		int GetMinAmountNeededExtract() const;
 		
 
 	FMakeKoalaItems MakeKoalaItems;

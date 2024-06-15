@@ -50,3 +50,8 @@ int UBasicPlayerWidget::GetBabyKoalasLeft() const
 {
 	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetBabyKoalasLeft() : 0;
 }
+
+int UBasicPlayerWidget::GetMinAmountNeededExtract() const
+{
+	return (PlayerCharacter != nullptr) ? PlayerCharacter->GetMinKoalasNeededExtract() : 0;
+}

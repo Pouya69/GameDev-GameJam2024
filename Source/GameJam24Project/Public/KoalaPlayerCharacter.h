@@ -103,6 +103,8 @@ public:
 		int GetBabyKoalasLeft() const;
 	UFUNCTION(BlueprintCallable)
 		float GetGunAmmoProportional() const;
+	UFUNCTION(BlueprintCallable)
+		float GetMinKoalasNeededExtract() const;
 
 	void UpdateKoalasAliveWidget();
 

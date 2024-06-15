@@ -311,6 +311,11 @@ float AKoalaPlayerCharacter::GetGunAmmoProportional() const
 	return Gun->GetAmmoLeft() / Gun->AmmunitionCapacity;
 }
 
+float AKoalaPlayerCharacter::GetMinKoalasNeededExtract() const
+{
+	return GameMode->MinBabyKoalasAliveNeeded;
+}
+
 void AKoalaPlayerCharacter::UpdateKoalasAliveWidget()
 {
 	if (BasicPlayerWidget == nullptr) return;
